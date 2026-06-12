@@ -6,7 +6,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/shirohania/sion/plugin/sdk"
+	"github.com/SHIROH4/sion-plus/plugin/sdk"
 )
 
 // Plugin implements sdk.Plugin for the memory module.

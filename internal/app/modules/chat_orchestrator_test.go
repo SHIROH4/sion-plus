@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirohania/sion/internal/adapter/emotion"
-	"github.com/shirohania/sion/internal/adapter/memory"
-	domainMemory "github.com/shirohania/sion/internal/domain/memory"
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/emotion"
+	"github.com/SHIROH4/sion-plus/internal/adapter/memory"
+	domainMemory "github.com/SHIROH4/sion-plus/internal/domain/memory"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // mockLLM returns canned responses keyed by prompt content.

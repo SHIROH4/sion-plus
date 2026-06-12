@@ -10,15 +10,15 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/shirohania/sion/internal/adapter/llm"
-	"github.com/shirohania/sion/internal/adapter/memory"
-	"github.com/shirohania/sion/internal/adapter/perception"
-	"github.com/shirohania/sion/internal/adapter/proactive"
-	"github.com/shirohania/sion/internal/adapter/tool"
-	"github.com/shirohania/sion/internal/app/modules"
-	"github.com/shirohania/sion/internal/domain/types"
-	domainMemory "github.com/shirohania/sion/internal/domain/memory"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/llm"
+	"github.com/SHIROH4/sion-plus/internal/adapter/memory"
+	"github.com/SHIROH4/sion-plus/internal/adapter/perception"
+	"github.com/SHIROH4/sion-plus/internal/adapter/proactive"
+	"github.com/SHIROH4/sion-plus/internal/adapter/tool"
+	"github.com/SHIROH4/sion-plus/internal/app/modules"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	domainMemory "github.com/SHIROH4/sion-plus/internal/domain/memory"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 type AppRuntime struct {

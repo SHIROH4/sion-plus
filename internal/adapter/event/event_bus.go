@@ -3,7 +3,7 @@ package event
 import (
 	"sync"
 
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // EventBusImpl is a goroutine-safe publish-subscribe bus.

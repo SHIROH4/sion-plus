@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/cognition"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/cognition"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // CuriosityEngineImpl implements port.CuriosityEngine.

@@ -5,9 +5,9 @@ import (
 	"log"
 	"time"
 
-	"github.com/shirohania/sion/internal/adapter/learning"
-	"github.com/shirohania/sion/internal/domain/cognition"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/learning"
+	"github.com/SHIROH4/sion-plus/internal/domain/cognition"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // LearningService wraps the learning stack (Learner + StrategyAgent + CuriosityEngine)

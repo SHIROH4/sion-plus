@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 )
 
 func TestIntentSchedulerSubmit(t *testing.T) {

@@ -3,7 +3,7 @@ package emotion
 import (
 	"math"
 
-	"github.com/shirohania/sion/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 )
 
 // ── Neutral Points (decay attractors) ──

@@ -9,9 +9,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/memory"
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/memory"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // mockLLM is a fake LLMExecutor that returns canned responses for testing.

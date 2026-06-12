@@ -1,8 +1,8 @@
 package expression
 
 import (
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // EmotionMapper implements port.ExpressionMapper.

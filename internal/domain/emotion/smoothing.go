@@ -1,6 +1,6 @@
 package emotion
 
-import "github.com/shirohania/sion/internal/domain/types"
+import "github.com/SHIROH4/sion-plus/internal/domain/types"
 
 // ── Smoothing Parameters ──
 

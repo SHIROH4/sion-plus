@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 func newTestGateway(t *testing.T, handler http.HandlerFunc) *OpenAIGateway {

@@ -1,4 +1,4 @@
-module github.com/shirohania/sion
+module github.com/SHIROH4/sion-plus
 
 go 1.25.0
 

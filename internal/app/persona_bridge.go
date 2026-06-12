@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	"github.com/shirohania/sion/internal/adapter/memory"
-	"github.com/shirohania/sion/internal/adapter/proactive"
+	"github.com/SHIROH4/sion-plus/internal/adapter/memory"
+	"github.com/SHIROH4/sion-plus/internal/adapter/proactive"
 )
 
 // personaBridge adapts memory.PersonaStore to proactive.PersonaQuerier.

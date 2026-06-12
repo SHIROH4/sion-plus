@@ -7,11 +7,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/shirohania/sion/internal/adapter/tool"
-	"github.com/shirohania/sion/internal/domain/cognition"
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
-	"github.com/shirohania/sion/internal/transport/sse"
+	"github.com/SHIROH4/sion-plus/internal/adapter/tool"
+	"github.com/SHIROH4/sion-plus/internal/domain/cognition"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/transport/sse"
 )
 
 // CognitionTick orchestrates the proactive decision loop.

@@ -1,6 +1,6 @@
 package cognition
 
-import "github.com/shirohania/sion/internal/domain/types"
+import "github.com/SHIROH4/sion-plus/internal/domain/types"
 
 // ComputeDrives maps 52-dimension features → 5-dimension drives.
 // This is the PURE FUNCTION implementing all the weighted formulas

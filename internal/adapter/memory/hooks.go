@@ -7,8 +7,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // LLMHooks wires LLM executors into the MemoryWorker and Compressor.

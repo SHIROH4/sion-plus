@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 )
 
 func newPersonaStore(t *testing.T) (*PersonaStore, *SQLiteStore) {

@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // RateLimiter is a simple token bucket that limits LLM calls per interval.

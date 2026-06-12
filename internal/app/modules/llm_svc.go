@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/shirohania/sion/internal/adapter/llm"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/llm"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // LLMService wraps the LLM stack as a Module.

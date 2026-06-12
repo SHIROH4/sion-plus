@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirohania/sion/internal/adapter/llm"
-	"github.com/shirohania/sion/internal/adapter/proactive"
-	"github.com/shirohania/sion/internal/adapter/tool"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/llm"
+	"github.com/SHIROH4/sion-plus/internal/adapter/proactive"
+	"github.com/SHIROH4/sion-plus/internal/adapter/tool"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // ── Mock LLM ─────────────────────────────────────────────────────

@@ -7,11 +7,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/shirohania/sion/internal/app"
-	"github.com/shirohania/sion/internal/infra/logbuffer"
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
-	"github.com/shirohania/sion/internal/transport/sse"
+	"github.com/SHIROH4/sion-plus/internal/app"
+	"github.com/SHIROH4/sion-plus/internal/infra/logbuffer"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/transport/sse"
 )
 
 type handlers struct {

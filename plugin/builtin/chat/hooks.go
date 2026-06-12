@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/plugin/sdk"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/plugin/sdk"
 )
 
 // BeforeChatHook builds the system prompt and injects relevant memory

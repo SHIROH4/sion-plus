@@ -1,6 +1,6 @@
 package cognition
 
-import "github.com/shirohania/sion/internal/domain/types"
+import "github.com/SHIROH4/sion-plus/internal/domain/types"
 
 // ── Action Scoring: Drive Dot-Product + Context Modulation ──
 

@@ -3,7 +3,7 @@ package cognition
 import (
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 )
 
 // ── Tier 1 Feature Computation (Pure In-Memory, ~1ms) ──

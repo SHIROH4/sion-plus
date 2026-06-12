@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // OllamaEmbedding implements port.EmbeddingService via Ollama's local HTTP API.

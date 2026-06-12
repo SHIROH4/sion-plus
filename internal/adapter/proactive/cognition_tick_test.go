@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/cognition"
-	"github.com/shirohania/sion/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/domain/cognition"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 )
 
 func TestIsShortAck(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/shirohania/sion/internal/adapter/memory"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/memory"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // MemoryService wraps the memory stack as a Module.

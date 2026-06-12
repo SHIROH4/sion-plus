@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // OpenAIGateway implements port.LLMExecutor via OpenAI-compatible HTTP API.

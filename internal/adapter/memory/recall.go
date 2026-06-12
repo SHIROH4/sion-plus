@@ -6,8 +6,8 @@ import (
 	"math/rand"
 	"sort"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // Recall implements port.MemoryRecall using BM25 (FTS5) + vector cosine + RRF fusion.

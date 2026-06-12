@@ -1,6 +1,6 @@
 package cognition
 
-import "github.com/shirohania/sion/internal/domain/types"
+import "github.com/SHIROH4/sion-plus/internal/domain/types"
 
 // BuildActions returns the complete 16-action registry.
 // This is the CANONICAL action set. Adding/removing/changing actions = editing this function.

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // ScreenEnrichment is the structured output of screen content analysis.

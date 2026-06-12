@@ -4,8 +4,8 @@ import (
 	"context"
 	"log"
 
-	"github.com/shirohania/sion/internal/adapter/emotion"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/emotion"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // EmotionService wraps the emotion stack as a Module.

@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // PersonaQuerier is the subset of PersonaStore used by proactive.

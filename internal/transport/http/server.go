@@ -7,9 +7,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/shirohania/sion/internal/app"
-	"github.com/shirohania/sion/internal/infra/logbuffer"
-	"github.com/shirohania/sion/internal/transport/sse"
+	"github.com/SHIROH4/sion-plus/internal/app"
+	"github.com/SHIROH4/sion-plus/internal/infra/logbuffer"
+	"github.com/SHIROH4/sion-plus/internal/transport/sse"
 )
 
 // Server wraps an http.Server with AppRuntime lifecycle integration.

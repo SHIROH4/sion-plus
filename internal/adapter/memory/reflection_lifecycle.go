@@ -6,8 +6,8 @@ import (
 	"log"
 	"math"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // ── Promotion Sweep ─────────────────────────────────────────────────

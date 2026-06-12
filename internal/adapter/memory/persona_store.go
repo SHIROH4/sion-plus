@@ -6,7 +6,7 @@ import (
 	"log"
 	"sort"
 
-	"github.com/shirohania/sion/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 )
 
 // PersonaStore provides structured query access to the identity knowledge graph.

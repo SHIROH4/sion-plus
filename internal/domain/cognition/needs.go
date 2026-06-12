@@ -1,6 +1,6 @@
 package cognition
 
-import "github.com/shirohania/sion/internal/domain/types"
+import "github.com/SHIROH4/sion-plus/internal/domain/types"
 
 // NeedModelImpl manages 6 intrinsic needs with homeostatic dynamics.
 // Satisfy() reduces a need; Grow() drifts toward baseline with natural growth.

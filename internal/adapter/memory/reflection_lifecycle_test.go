@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	domainMemory "github.com/shirohania/sion/internal/domain/memory"
-	"github.com/shirohania/sion/internal/domain/types"
+	domainMemory "github.com/SHIROH4/sion-plus/internal/domain/memory"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 )
 
 func newTestStack(t *testing.T) (*MemoryWorker, *SQLiteStore) {

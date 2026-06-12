@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shirohania/sion/internal/adapter/tool"
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/adapter/tool"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // recentRequest holds a cached user request for deduplication.

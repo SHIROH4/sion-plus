@@ -10,9 +10,9 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	derr "github.com/shirohania/sion/internal/domain/errors"
-	"github.com/shirohania/sion/internal/port"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	derr "github.com/SHIROH4/sion-plus/internal/domain/errors"
+	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
 // AppDataDir returns the OS-appropriate application data directory.

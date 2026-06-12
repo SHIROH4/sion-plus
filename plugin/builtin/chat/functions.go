@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/shirohania/sion/internal/domain/types"
-	"github.com/shirohania/sion/plugin/sdk"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/plugin/sdk"
 )
 
 var _ sdk.FunctionProvider = (*Plugin)(nil)

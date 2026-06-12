@@ -1,6 +1,6 @@
 package sdk
 
-import "github.com/shirohania/sion/internal/port"
+import "github.com/SHIROH4/sion-plus/internal/port"
 
 // PluginContext is the dependency injection container passed to every plugin
 // at Init time. It provides access to all port interfaces without importing
