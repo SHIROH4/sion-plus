@@ -1,0 +1,32 @@
+{
+  "name": "sion-frontend",
+  "private": true,
+  "version": "2.3.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "dev:electron": "lsof -ti :5173 :8080 | xargs kill -9 2>/dev/null; trap 'lsof -ti :5173 :8080 | xargs kill -9 2>/dev/null' EXIT; concurrently -k --kill-others \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "vue-tsc -b && vite build",
+    "build:electron": "vue-tsc -b && vite build && electron-builder",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "echarts": "^6.1.0",
+    "naive-ui": "^2.44.1",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.25",
+    "vue-echarts": "^8.0.1",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.2.4",
+    "concurrently": "^10.0.3",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2",
+    "typescript": "~5.6.3",
+    "vite": "^5.4.19",
+    "vue-tsc": "^2.2.12",
+    "wait-on": "^9.0.10"
+  }
+}

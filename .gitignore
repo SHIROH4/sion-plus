@@ -1,0 +1,39 @@
+# Compiled binary
+sion
+*.exe
+
+# Binaries
+bin/
+build/bin/
+
+# Generated
+internal/app/wire_gen.go
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config (may contain API keys)
+config/*.yaml
+!config/default.yaml
+
+# Data directory
+.sion/
+
+# Token usage logs (privacy)
+token_usage/
+
+# Test coverage
+*.out
+*.test
+
+# Dependencies
+vendor/
+node_modules/
+frontend/node_modules/
