@@ -107,7 +107,7 @@ func TestScreenObserverFrontmostApp(t *testing.T) {
 
 	app, err := o.frontmostApp(ctx)
 	if err != nil {
-		t.Fatalf("frontmostApp: %v", err)
+		t.Skipf("requires accessibility permission (System Events): %v", err)
 	}
 	if app == "" {
 		t.Error("frontmost app should not be empty")
@@ -125,7 +125,7 @@ func TestScreenObserverCaptureScreenshot(t *testing.T) {
 
 	jpg, err := o.CaptureScreenshot(ctx)
 	if err != nil {
-		t.Fatalf("CaptureScreenshot: %v", err)
+		t.Skipf("requires screen recording permission: %v", err)
 	}
 	if len(jpg) == 0 {
 		t.Error("screenshot should not be empty")

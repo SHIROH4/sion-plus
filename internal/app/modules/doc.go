@@ -14,7 +14,3 @@ type Module interface {
 	Stop(ctx context.Context) error
 	Health(ctx context.Context) error
 }
-
-// TODO (module 18): Implement MemoryService
-// TODO (module 19): Implement EmotionService
-// TODO (module 22): Implement ProactiveService
