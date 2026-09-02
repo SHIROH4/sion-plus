@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"sync"
 	"time"
-
 )
 
 // SelfModelStore persists the AI's evolving self-description.

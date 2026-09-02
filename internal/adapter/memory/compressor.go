@@ -65,11 +65,11 @@ func (c *Compressor) SetCompressHook(fn func(ctx context.Context, messages []typ
 
 // CompressResult contains the output of a compression cycle.
 type CompressResult struct {
-	Memo        string           // the compression summary text
-	TrimmedMsgs []types.Message  // messages removed from L0 (for archiving)
+	Memo        string            // the compression summary text
+	TrimmedMsgs []types.Message   // messages removed from L0 (for archiving)
 	NewFacts    []types.FactEntry // facts extracted during flush (Phase 1)
-	Flushed     bool             // whether Phase 1 ran
-	Compressed  bool             // whether Phase 2 ran successfully
+	Flushed     bool              // whether Phase 1 ran
+	Compressed  bool              // whether Phase 2 ran successfully
 }
 
 // Run executes a full Flush-then-Compress cycle.

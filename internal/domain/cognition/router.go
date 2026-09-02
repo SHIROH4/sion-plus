@@ -9,13 +9,13 @@ import (
 // System 1 (fast path): gap between #1 and #2 > 0.15 AND no extreme conditions.
 //
 // System 2 (LLM fallback): triggered when:
-//   1. Score gap ≤ 0.15 (too close to call)
-//   2. Extreme sleepiness (>0.85)
-//   3. Extreme user emotion
-//   4. Action stuck (same action ≥3 times)
-//   5. Consecutive rejections ≥3
-//   6. Acceptance rate collapse
-//   7. Long silence reconnection
+//  1. Score gap ≤ 0.15 (too close to call)
+//  2. Extreme sleepiness (>0.85)
+//  3. Extreme user emotion
+//  4. Action stuck (same action ≥3 times)
+//  5. Consecutive rejections ≥3
+//  6. Acceptance rate collapse
+//  7. Long silence reconnection
 //
 // The gap threshold (0.15) is the primary S1 confidence gate.
 // Even when other S2 triggers fire, if the top action is decisively ahead,

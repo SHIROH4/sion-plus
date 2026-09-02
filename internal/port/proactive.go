@@ -20,10 +20,10 @@ type IntentScheduler interface {
 }
 
 type SchedulerStats struct {
-	Queued    int `json:"queued"`
+	Queued     int `json:"queued"`
 	DroppedTTL int `json:"dropped_ttl"`
-	Coalesced int `json:"coalesced"`
-	Delivered int `json:"delivered"`
+	Coalesced  int `json:"coalesced"`
+	Delivered  int `json:"delivered"`
 }
 
 // ── Delivery Gate ──

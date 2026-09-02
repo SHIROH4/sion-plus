@@ -18,7 +18,7 @@ type EventBusImpl struct {
 type subscription struct {
 	id      int
 	handler func(payload any)
-	pattern bool   // true = prefix match, false = exact match
+	pattern bool                            // true = prefix match, false = exact match
 	raw     func(topic string, payload any) // for pattern subscribers
 }
 

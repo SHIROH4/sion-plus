@@ -79,11 +79,11 @@ func actionName(idx int) string {
 
 // DPOConfig holds the learning hyperparameters.
 type DPOConfig struct {
-	LearningRate  float64 // η, default 0.01
-	Beta          float64 // temperature for preference strength, default 1.0
-	L2Lambda      float64 // L2 regularization, default 0.001
-	MinSamples    int     // minimum samples before learning, default 10
-	MaxDelta      float64 // max per-weight change per batch, default 0.1
+	LearningRate float64 // η, default 0.01
+	Beta         float64 // temperature for preference strength, default 1.0
+	L2Lambda     float64 // L2 regularization, default 0.001
+	MinSamples   int     // minimum samples before learning, default 10
+	MaxDelta     float64 // max per-weight change per batch, default 0.1
 }
 
 // DefaultDPOConfig returns sensible defaults.
@@ -356,10 +356,10 @@ func StaleRecordCleanup(records []DriveRecord, maxAgeHours float64, now int64) [
 
 // RecordStats computes summary statistics for drive records.
 type RecordStats struct {
-	Total    int
-	Accepted int
-	Rejected int
-	Ignored  int
+	Total     int
+	Accepted  int
+	Rejected  int
+	Ignored   int
 	TopAction string
 }
 

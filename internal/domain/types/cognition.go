@@ -33,41 +33,41 @@ type QuantifiedFeatures struct {
 	A13_LearningMomentum  float64 `json:"a13_learning_momentum"`
 
 	// === U组: User状态 ===
-	U1_AppCategory        string  `json:"u1_app_category"`
-	U2_WindowSubtype      string  `json:"u2_window_subtype"`
-	U3_IsWorking          float64 `json:"u3_is_working"`
-	U4_ContinuousWorkMin  float64 `json:"u4_continuous_work_min"`
-	U5_AppSwitchCount     float64 `json:"u5_app_switch_count"`
-	U7_LengthTrend        float64 `json:"u7_length_trend"`
-	U8_EngagementNorm     float64 `json:"u8_engagement_norm"`
-	U10_TimeWindowPref    float64 `json:"u10_time_window_pref"`
-	U11_MealTime          float64 `json:"u11_meal_time"`
-	U12_NightTime         float64 `json:"u12_night_time"`
-	U13_IsWeekend         float64 `json:"u13_is_weekend"`
-	U14_TimeSinceChatMin  float64 `json:"u14_time_since_chat_min"`
-	U15_FatigueMentionHr  float64 `json:"u15_fatigue_mention_hr"`
-	U16_PrefDiversity     float64 `json:"u16_pref_diversity"`
+	U1_AppCategory       string  `json:"u1_app_category"`
+	U2_WindowSubtype     string  `json:"u2_window_subtype"`
+	U3_IsWorking         float64 `json:"u3_is_working"`
+	U4_ContinuousWorkMin float64 `json:"u4_continuous_work_min"`
+	U5_AppSwitchCount    float64 `json:"u5_app_switch_count"`
+	U7_LengthTrend       float64 `json:"u7_length_trend"`
+	U8_EngagementNorm    float64 `json:"u8_engagement_norm"`
+	U10_TimeWindowPref   float64 `json:"u10_time_window_pref"`
+	U11_MealTime         float64 `json:"u11_meal_time"`
+	U12_NightTime        float64 `json:"u12_night_time"`
+	U13_IsWeekend        float64 `json:"u13_is_weekend"`
+	U14_TimeSinceChatMin float64 `json:"u14_time_since_chat_min"`
+	U15_FatigueMentionHr float64 `json:"u15_fatigue_mention_hr"`
+	U16_PrefDiversity    float64 `json:"u16_pref_diversity"`
 
 	// === E组: Environment ===
-	E1_Hour              int     `json:"e1_hour"`
-	E2_DayOfWeek         int     `json:"e2_day_of_week"`
-	E3_CooldownNorm      float64 `json:"e3_cooldown_norm"`
-	E4_QuotaRemaining    int     `json:"e4_quota_remaining"`
-	E5_MinSinceDecision  float64 `json:"e5_min_since_decision"`
-	E6_LLMAvailable      bool    `json:"e6_llm_available"`
-	E7_ReflectionDue     float64 `json:"e7_reflection_due"`
+	E1_Hour             int     `json:"e1_hour"`
+	E2_DayOfWeek        int     `json:"e2_day_of_week"`
+	E3_CooldownNorm     float64 `json:"e3_cooldown_norm"`
+	E4_QuotaRemaining   int     `json:"e4_quota_remaining"`
+	E5_MinSinceDecision float64 `json:"e5_min_since_decision"`
+	E6_LLMAvailable     bool    `json:"e6_llm_available"`
+	E7_ReflectionDue    float64 `json:"e7_reflection_due"`
 
 	// === R组: Relationship ===
-	R1_OverallAcceptRate  float64            `json:"r1_overall_accept_rate"`
-	R1_SampleCount        float64            `json:"r1_sample_count"`
-	R2_TimeWindowAccept   float64            `json:"r2_time_window_accept"`
-	R3_SourceAcceptRate   map[string]float64 `json:"r3_source_accept_rate"`
-	R4_RecentRejections   float64            `json:"r4_recent_rejections"`
-	R4_RejectionSeverity  float64            `json:"r4_rejection_severity"`
-	R5_NeglectHours       float64            `json:"r5_neglect_hours"`
-	R6_DepthTrend         float64            `json:"r6_depth_trend"`
-	R7_UserInitiative24h  float64            `json:"r7_user_initiative_24h"`
-	R8_IntimacyTrend      float64            `json:"r8_intimacy_trend"`
+	R1_OverallAcceptRate float64            `json:"r1_overall_accept_rate"`
+	R1_SampleCount       float64            `json:"r1_sample_count"`
+	R2_TimeWindowAccept  float64            `json:"r2_time_window_accept"`
+	R3_SourceAcceptRate  map[string]float64 `json:"r3_source_accept_rate"`
+	R4_RecentRejections  float64            `json:"r4_recent_rejections"`
+	R4_RejectionSeverity float64            `json:"r4_rejection_severity"`
+	R5_NeglectHours      float64            `json:"r5_neglect_hours"`
+	R6_DepthTrend        float64            `json:"r6_depth_trend"`
+	R7_UserInitiative24h float64            `json:"r7_user_initiative_24h"`
+	R8_IntimacyTrend     float64            `json:"r8_intimacy_trend"`
 
 	// === T组: Task Context ===
 	T1_PrincipleCount     float64 `json:"t1_principle_count"`
@@ -105,32 +105,32 @@ type CognitionState struct {
 	EngagementNorm float64
 
 	// Timestamps
-	LastChatAt        int64
-	LastActionAt      int64
-	LastDecisionAt    int64
-	LastReflectionAt  int64
+	LastChatAt       int64
+	LastActionAt     int64
+	LastDecisionAt   int64
+	LastReflectionAt int64
 
 	// Counters
-	ActionCount        int
-	ConsecutiveAction  string
-	ConsecutiveCount   int
-	QuotaRemaining     int
+	ActionCount       int
+	ConsecutiveAction string
+	ConsecutiveCount  int
+	QuotaRemaining    int
 
 	// Derived signals
-	FatigueMentionHours float64
-		HistoryAverageValence   float64 // EMA of past valence values, for A4_ValenceTrend
-	PrefDiversity       int
-	LLMAvailable        bool
+	FatigueMentionHours   float64
+	HistoryAverageValence float64 // EMA of past valence values, for A4_ValenceTrend
+	PrefDiversity         int
+	LLMAvailable          bool
 
 	// Relationship stats
-	OverallAcceptRate  float64
-	AcceptSampleCount  int
-	TimeWindowAccept   float64
-	SourceAcceptRate   map[string]float64
-	RecentRejections   int
-	DepthTrend         float64
-	UserInitiative24h  int
-	IntimacyTrend      float64
+	OverallAcceptRate float64
+	AcceptSampleCount int
+	TimeWindowAccept  float64
+	SourceAcceptRate  map[string]float64
+	RecentRejections  int
+	DepthTrend        float64
+	UserInitiative24h int
+	IntimacyTrend     float64
 
 	// Task stats
 	ActivePrincipleCount int
@@ -149,11 +149,11 @@ type ScreenObsInput struct {
 // DriveVector is the output of ComputeDrives: five internal motivational drives
 // that determine which action the AI should take.
 type DriveVector struct {
-	Social  float64 `json:"social"`   // [0,1] — desire to interact
-	Care    float64 `json:"care"`     // [0,1] — desire to nurture
-	Curious float64 `json:"curious"`  // [0,1] — desire to learn
-	Quiet   float64 `json:"quiet"`    // [0,1] — desire to stay silent
-	Explore float64 `json:"explore"`  // [0,1] — desire to discover
+	Social  float64 `json:"social"`  // [0,1] — desire to interact
+	Care    float64 `json:"care"`    // [0,1] — desire to nurture
+	Curious float64 `json:"curious"` // [0,1] — desire to learn
+	Quiet   float64 `json:"quiet"`   // [0,1] — desire to stay silent
+	Explore float64 `json:"explore"` // [0,1] — desire to discover
 }
 
 // Zero returns true if all drives are at zero.
@@ -167,11 +167,11 @@ func (d DriveVector) Zero() bool {
 // Each action has a weight vector for drive dot-product scoring and
 // a SkillCard that explains the action to the LLM (for System 2 fallback).
 type ActionDef struct {
-	Name        string    `json:"name"`
-	Category    string    `json:"category"`     // "social"|"care"|"learning"|"none"
-	NightSafe   bool      `json:"night_safe"`
-	OutcomeType string    `json:"outcome_type"`  // "speak"|"action"|"silent"
-	Source      string    `json:"source"`        // "proactive"|"reactive"
+	Name        string `json:"name"`
+	Category    string `json:"category"` // "social"|"care"|"learning"|"none"
+	NightSafe   bool   `json:"night_safe"`
+	OutcomeType string `json:"outcome_type"` // "speak"|"action"|"silent"
+	Source      string `json:"source"`       // "proactive"|"reactive"
 
 	WeightSocial  float64 `json:"weight_social"`
 	WeightCare    float64 `json:"weight_care"`

@@ -2,13 +2,14 @@ package prompts
 
 // PromptStrategicReflection is the daily strategic reflection prompt.
 // Placeholders (in order):
-//   %s[1] = current self model
-//   %s[2] = interaction count
-//   %s[3] = proactive accept rate
-//   %s[4] = active principles
-//   %s[5] = recent diaries
-//   %s[6] = yesterday facts
-//   %s[7] = active threads
+//
+//	%s[1] = current self model
+//	%s[2] = interaction count
+//	%s[3] = proactive accept rate
+//	%s[4] = active principles
+//	%s[5] = recent diaries
+//	%s[6] = yesterday facts
+//	%s[7] = active threads
 const PromptStrategicReflection = `## 每日战略反思
 
 你是诗音的元认知层。每天一次，回顾过去一天的互动，提炼经验，规划策略。

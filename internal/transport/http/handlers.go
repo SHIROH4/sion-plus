@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/SHIROH4/sion-plus/internal/app"
-	"github.com/SHIROH4/sion-plus/internal/infra/logbuffer"
 	"github.com/SHIROH4/sion-plus/internal/domain/types"
+	"github.com/SHIROH4/sion-plus/internal/infra/logbuffer"
 	"github.com/SHIROH4/sion-plus/internal/port"
 	"github.com/SHIROH4/sion-plus/internal/transport/sse"
 )
@@ -32,8 +32,6 @@ type chatResponse struct {
 	Emotion  string `json:"emotion"`
 	Source   string `json:"source"`
 }
-
-
 
 type emotionResponse struct {
 	Primary   string         `json:"primary"`
@@ -88,7 +86,7 @@ func (h *handlers) chat(w http.ResponseWriter, r *http.Request) {
 	h.pushEmotion()
 }
 
-	// ── GET /api/v1/chat/history ──────────────────────────────────────
+// ── GET /api/v1/chat/history ──────────────────────────────────────
 
 func (h *handlers) chatHistory(w http.ResponseWriter, r *http.Request) {
 	msgs, err := h.runtime.LoadChatHistory(r.Context(), 50)
@@ -239,7 +237,7 @@ func (h *handlers) chatStream(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "event: done\ndata: %s\n\n", final)
 	flusher.Flush()
 
-		// Publish AI response after processing
+	// Publish AI response after processing
 	h.broker.Publish("chat-message", map[string]string{
 		"role": "user", "content": req.Message,
 	})
@@ -402,10 +400,10 @@ func (h *handlers) proactiveStatus(w http.ResponseWriter, r *http.Request) {
 		mode = "focus"
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"mode":        mode,
+		"mode":         mode,
 		"interval_sec": int(interval.Seconds()),
-		"last_action": lastAction,
-		"last_tick":   lastTickUnix,
+		"last_action":  lastAction,
+		"last_tick":    lastTickUnix,
 	})
 }
 

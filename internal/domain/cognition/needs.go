@@ -67,12 +67,12 @@ func (n *NeedModelImpl) Current() *types.IntrinsicNeeds {
 
 func (n *NeedModelImpl) Modulation() *types.NeedModulation {
 	return &types.NeedModulation{
-		ConfidenceDecayMul:   1.0 + n.needs.Autonomy*0.3,
-		CuriosityDecayMul:    1.0 + (1.0-n.needs.Curiosity)*0.2,
-		PlayfulnessDecayMul:  1.0 + n.needs.Play*0.3,
-		WorryDecayMul:        1.0 + n.needs.Care*0.5,
-		LonelinessDecayMul:   1.0 + (1.0-n.needs.Companionship)*0.4,
-		SleepinessGrowthMul:  1.0 + n.needs.Rest*0.6,
+		ConfidenceDecayMul:  1.0 + n.needs.Autonomy*0.3,
+		CuriosityDecayMul:   1.0 + (1.0-n.needs.Curiosity)*0.2,
+		PlayfulnessDecayMul: 1.0 + n.needs.Play*0.3,
+		WorryDecayMul:       1.0 + n.needs.Care*0.5,
+		LonelinessDecayMul:  1.0 + (1.0-n.needs.Companionship)*0.4,
+		SleepinessGrowthMul: 1.0 + n.needs.Rest*0.6,
 	}
 }
 

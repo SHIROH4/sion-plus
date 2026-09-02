@@ -110,9 +110,9 @@ func (h *LLMHooks) extractFacts(ctx context.Context, messages []types.Message) (
 
 type signalDetectionResult struct {
 	Signals []struct {
-		EntryID            int64  `json:"entry_id"`
-		Type               string `json:"type"`
-		SourceFactContent  string `json:"source_fact_content"`
+		EntryID           int64  `json:"entry_id"`
+		Type              string `json:"type"`
+		SourceFactContent string `json:"source_fact_content"`
 	} `json:"signals"`
 }
 

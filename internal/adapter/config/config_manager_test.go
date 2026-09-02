@@ -174,7 +174,7 @@ func TestPluginConfigCRUD(t *testing.T) {
 
 	// Set
 	err = mgr.SetPluginConfig("test_plugin", map[string]any{
-		"enabled": true,
+		"enabled":  true,
 		"interval": 60,
 	})
 	if err != nil {

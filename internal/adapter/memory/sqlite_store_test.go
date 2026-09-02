@@ -28,14 +28,14 @@ func TestFactsCRUD(t *testing.T) {
 	store := newTestStore(t)
 
 	f := &types.FactEntry{
-		Entity:       "master",
-		RelationType: "preference",
-		Content:      "likes Rust programming language",
-		SourceTier:   types.SourceExplicit,
+		Entity:        "master",
+		RelationType:  "preference",
+		Content:       "likes Rust programming language",
+		SourceTier:    types.SourceExplicit,
 		TemporalScope: types.ScopePattern,
-		Importance:   8,
-		Source:       "chat",
-		MemCellType:  "prefer",
+		Importance:    8,
+		Source:        "chat",
+		MemCellType:   "prefer",
 		Evidence: types.MemoryEvidenceEntry{
 			Reinforcement:    0.5,
 			ReinLastSignalAt: time.Now().Unix(),
@@ -105,14 +105,14 @@ func TestFactsCRUD(t *testing.T) {
 	// SearchFactsByTimeRange: create facts at different times
 	now := time.Now().Unix()
 	f2 := &types.FactEntry{
-		Entity:       "master",
-		RelationType: "identity",
-		Content:      "backend engineer",
-		SourceTier:   types.SourceExplicit,
+		Entity:        "master",
+		RelationType:  "identity",
+		Content:       "backend engineer",
+		SourceTier:    types.SourceExplicit,
 		TemporalScope: types.ScopePattern,
-		Importance:   7,
-		Source:       "chat",
-		MemCellType:  "fact",
+		Importance:    7,
+		Source:        "chat",
+		MemCellType:   "fact",
 		Evidence: types.MemoryEvidenceEntry{
 			Reinforcement:    0.5,
 			ReinLastSignalAt: time.Now().Unix(),
@@ -148,14 +148,14 @@ func TestFTS5Search(t *testing.T) {
 	store := newTestStore(t)
 
 	f := &types.FactEntry{
-		Entity:       "master",
-		RelationType: "preference",
-		Content:      "likes Go generics",
-		SourceTier:   types.SourceExplicit,
+		Entity:        "master",
+		RelationType:  "preference",
+		Content:       "likes Go generics",
+		SourceTier:    types.SourceExplicit,
 		TemporalScope: types.ScopePattern,
-		Importance:   6,
-		Source:       "chat",
-		MemCellType:  "prefer",
+		Importance:    6,
+		Source:        "chat",
+		MemCellType:   "prefer",
 		Evidence: types.MemoryEvidenceEntry{
 			Reinforcement:    0.5,
 			ReinLastSignalAt: time.Now().Unix(),
@@ -256,9 +256,9 @@ func TestThreads(t *testing.T) {
 	store := newTestStore(t)
 
 	id, err := store.SaveThread(ctx, &types.ConversationThread{
-		Type:    "follow_up",
-		Goal:    "ask about Rust project progress",
-		Status:  "active",
+		Type:     "follow_up",
+		Goal:     "ask about Rust project progress",
+		Status:   "active",
 		Priority: 0.8,
 	})
 	if err != nil {
@@ -451,14 +451,14 @@ func TestRunForgetting(t *testing.T) {
 
 	// Create a state fact that should expire
 	f := &types.FactEntry{
-		Entity:       "master",
-		RelationType: "emotional",
-		Content:      "temporary state",
-		SourceTier:   types.SourceObserved,
-		TemporalScope: types.ScopeState,
+		Entity:         "master",
+		RelationType:   "emotional",
+		Content:        "temporary state",
+		SourceTier:     types.SourceObserved,
+		TemporalScope:  types.ScopeState,
 		AutoExpireDays: 1,
-		Source:       "test",
-		MemCellType:  "emotion",
+		Source:         "test",
+		MemCellType:    "emotion",
 		Evidence: types.MemoryEvidenceEntry{
 			Reinforcement:    0.5,
 			ReinLastSignalAt: time.Now().Unix(),

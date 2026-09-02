@@ -57,23 +57,23 @@ func CanTransitionReflection(old, new ReflectionStatus) bool {
 
 // EventLogEntry is an append-only audit record.
 type EventLogEntry struct {
-	ID        int64  `json:"id"`
-	Type      string `json:"type"`      // "fact.added"|"fact.signal_applied"|"fact.archived"|...
-	EntityID  int64  `json:"entity_id"` // the affected fact/reflection/diary ID
+	ID         int64  `json:"id"`
+	Type       string `json:"type"`        // "fact.added"|"fact.signal_applied"|"fact.archived"|...
+	EntityID   int64  `json:"entity_id"`   // the affected fact/reflection/diary ID
 	EntityKind string `json:"entity_kind"` // "fact"|"reflection"|"diary"|"strategy"
-	Payload   string `json:"payload"`   // JSON blob with event details
-	CreatedAt int64  `json:"created_at"`
+	Payload    string `json:"payload"`     // JSON blob with event details
+	CreatedAt  int64  `json:"created_at"`
 }
 
 // Event type constants.
 const (
-	EvtFactAdded           = "fact.added"
-	EvtFactSignalApplied   = "fact.signal_applied"
-	EvtFactArchived        = "fact.archived"
-	EvtFactAbsorbed        = "fact.absorbed"
-	EvtReflectionSynthesized = "reflection.synthesized"
+	EvtFactAdded              = "fact.added"
+	EvtFactSignalApplied      = "fact.signal_applied"
+	EvtFactArchived           = "fact.archived"
+	EvtFactAbsorbed           = "fact.absorbed"
+	EvtReflectionSynthesized  = "reflection.synthesized"
 	EvtReflectionStateChanged = "reflection.state_changed"
-	EvtEvidenceUpdated     = "evidence.updated"
+	EvtEvidenceUpdated        = "evidence.updated"
 )
 
 // ── Evidence Config ──
@@ -116,20 +116,20 @@ const SchemaVersionCurrent = 1
 // independently decay over time, and evidence_score = rein - disp.
 // Protected entries have score = +inf and never archive.
 type MemoryEvidenceEntry struct {
-	Reinforcement        float64                `json:"reinforcement"`
-	Disputation          float64                `json:"disputation"`
-	ReinLastSignalAt     int64                  `json:"rein_last_signal_at"`     // unix seconds
-	DispLastSignalAt     int64                  `json:"disp_last_signal_at"`     // unix seconds
-	ReinComboCount       int                    `json:"rein_combo_count"`
-	Protected            bool                   `json:"protected"`
-	SubZeroDays          int                    `json:"sub_zero_days"`
-	SubZeroLastIncrDate  string                 `json:"sub_zero_last_incr_date"` // "2006-01-02"
-	SignalHistory        []EvidenceSignalRecord `json:"signal_history,omitempty"` // 最近N条信号, 用于振荡检测
+	Reinforcement       float64                `json:"reinforcement"`
+	Disputation         float64                `json:"disputation"`
+	ReinLastSignalAt    int64                  `json:"rein_last_signal_at"` // unix seconds
+	DispLastSignalAt    int64                  `json:"disp_last_signal_at"` // unix seconds
+	ReinComboCount      int                    `json:"rein_combo_count"`
+	Protected           bool                   `json:"protected"`
+	SubZeroDays         int                    `json:"sub_zero_days"`
+	SubZeroLastIncrDate string                 `json:"sub_zero_last_incr_date"`  // "2006-01-02"
+	SignalHistory       []EvidenceSignalRecord `json:"signal_history,omitempty"` // 最近N条信号, 用于振荡检测
 }
 
 // EvidenceSignalRecord stores a single evidence signal for oscillation detection.
 type EvidenceSignalRecord struct {
-	Type      string  `json:"type"`      // "reinforce"|"contradict"
+	Type      string  `json:"type"` // "reinforce"|"contradict"
 	Delta     float64 `json:"delta"`
 	Timestamp int64   `json:"timestamp"`
 }
@@ -150,7 +150,7 @@ type FactEntry struct {
 	SourceTier       FactSourceTier `json:"source_tier"`       // explicit|observed|inferred
 	TemporalScope    TemporalScope  `json:"temporal_scope"`    // pattern|state|episode
 	AutoExpireDays   int            `json:"auto_expire_days"`  // state类自动失效天数, 0=永不过时
-	ObservationCount int            `json:"observation_count"`  // observed类累计观察次数
+	ObservationCount int            `json:"observation_count"` // observed类累计观察次数
 
 	// ── 重要性 ──
 	Importance int `json:"importance"` // 1-10
@@ -181,7 +181,7 @@ type FactEntry struct {
 
 	// ── v2.1: SignalDetection drain + absorption tracking ──
 	SignalProcessed bool `json:"signal_processed"` // false=未经过Stage-2信号检测
-	Absorbed        bool `json:"absorbed"`          // true=已被reflection消费
+	Absorbed        bool `json:"absorbed"`         // true=已被reflection消费
 
 	// ── v2.1: Embedding cache ──
 	EmbeddingTextSHA256 string `json:"embedding_text_sha256,omitempty"`
@@ -212,10 +212,10 @@ type ReflectionEntry struct {
 	SourceFactIDs []int64 `json:"source_fact_ids"`
 
 	// ── Evidence tracking ──
-	Reinforcement     float64 `json:"reinforcement"`
-	ReinLastSignalAt  string  `json:"rein_last_signal_at,omitempty"`
-	Disputation       float64 `json:"disputation"`
-	DispLastSignalAt  string  `json:"disp_last_signal_at,omitempty"`
+	Reinforcement    float64 `json:"reinforcement"`
+	ReinLastSignalAt string  `json:"rein_last_signal_at,omitempty"`
+	Disputation      float64 `json:"disputation"`
+	DispLastSignalAt string  `json:"disp_last_signal_at,omitempty"`
 
 	// ── State machine ──
 	Feedback       string `json:"feedback,omitempty"`
@@ -260,18 +260,18 @@ const (
 // DiaryEntry is a timestamped episodic memory entry generated periodically
 // or on emotional spikes. Stores an LLM-generated title, summary, and vector.
 type DiaryEntry struct {
-	ID              int64     `json:"id"`
-	SchemaVersion   int       `json:"schema_version"`
-	Title           string    `json:"title"`
-	Summary         string    `json:"summary"`
-	EmotionValence  float64   `json:"emotion_valence"`
-	EmotionArousal  float64   `json:"emotion_arousal"`
-	EmotionPrimary  string    `json:"emotion_primary"`
-	Vector          []float32 `json:"vector,omitempty"`
-	TopicID         int64     `json:"topic_id,omitempty"`
-	Abstracted      bool      `json:"abstracted"`       // 已被L1→L2抽象
-	Archived        bool      `json:"archived"`
-	CreatedAt       int64     `json:"created_at"`
+	ID             int64     `json:"id"`
+	SchemaVersion  int       `json:"schema_version"`
+	Title          string    `json:"title"`
+	Summary        string    `json:"summary"`
+	EmotionValence float64   `json:"emotion_valence"`
+	EmotionArousal float64   `json:"emotion_arousal"`
+	EmotionPrimary string    `json:"emotion_primary"`
+	Vector         []float32 `json:"vector,omitempty"`
+	TopicID        int64     `json:"topic_id,omitempty"`
+	Abstracted     bool      `json:"abstracted"` // 已被L1→L2抽象
+	Archived       bool      `json:"archived"`
+	CreatedAt      int64     `json:"created_at"`
 }
 
 // ── StrategyPrinciple (L3 Strategic Memory) ──
@@ -284,8 +284,8 @@ type StrategyPrinciple struct {
 	GoodStrategy  string    `json:"good_strategy"`
 	BadStrategy   string    `json:"bad_strategy"`
 	Reason        string    `json:"reason"`
-	Confidence    float64   `json:"confidence"`   // 0~1
-	Source        string    `json:"source"`        // "daily_reflection"|"auto-distill"|"merged"
+	Confidence    float64   `json:"confidence"` // 0~1
+	Source        string    `json:"source"`     // "daily_reflection"|"auto-distill"|"merged"
 	Vector        []float32 `json:"vector,omitempty"`
 	Active        bool      `json:"active"`
 	CreatedAt     int64     `json:"created_at"`
@@ -318,15 +318,15 @@ type Topic struct {
 
 // ConversationThread tracks an ongoing multi-turn topic.
 type ConversationThread struct {
-	ID           int64   `json:"id"`
-	SchemaVersion int    `json:"schema_version"`
-	Type         string  `json:"type"` // "follow_up"|"exploration"|"care"|"entertainment"
-	Goal         string  `json:"goal"`
-	Status       string  `json:"status"`        // "active"|"stale"|"resolved"
-	Priority     float64 `json:"priority"`      // 0~1
-	BestApproach string  `json:"best_approach"`
-	Outcome      string  `json:"outcome,omitempty"`
-	Learnings    string  `json:"learnings,omitempty"`
-	CreatedAt    int64   `json:"created_at"`
-	UpdatedAt    int64   `json:"updated_at"`
+	ID            int64   `json:"id"`
+	SchemaVersion int     `json:"schema_version"`
+	Type          string  `json:"type"` // "follow_up"|"exploration"|"care"|"entertainment"
+	Goal          string  `json:"goal"`
+	Status        string  `json:"status"`   // "active"|"stale"|"resolved"
+	Priority      float64 `json:"priority"` // 0~1
+	BestApproach  string  `json:"best_approach"`
+	Outcome       string  `json:"outcome,omitempty"`
+	Learnings     string  `json:"learnings,omitempty"`
+	CreatedAt     int64   `json:"created_at"`
+	UpdatedAt     int64   `json:"updated_at"`
 }

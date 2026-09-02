@@ -37,8 +37,8 @@ type UIProperty struct {
 	Options []UIOption `json:"options,omitempty"`
 
 	// For "slider" type
-	Min float64 `json:"min,omitempty"`
-	Max float64 `json:"max,omitempty"`
+	Min  float64 `json:"min,omitempty"`
+	Max  float64 `json:"max,omitempty"`
 	Step float64 `json:"step,omitempty"`
 
 	// For "number" type
@@ -53,6 +53,6 @@ type UIOption struct {
 
 // UILayoutSection groups properties into visual sections in the settings panel.
 type UILayoutSection struct {
-	Title  string   `json:"title"`
-	Keys   []string `json:"keys"`
+	Title string   `json:"title"`
+	Keys  []string `json:"keys"`
 }

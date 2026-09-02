@@ -45,7 +45,9 @@ func (c *ChatOrchestrator) SetToolRegistry(tr port.ChatToolProvider) { c.toolReg
 
 // SetPostChatHook sets a callback invoked after each conversation turn.
 // The hook receives (userMsg, assistantResponse) and runs asynchronously.
-func (c *ChatOrchestrator) SetPostChatHook(hook func(userMsg, response string)) { c.postChatHook = hook }
+func (c *ChatOrchestrator) SetPostChatHook(hook func(userMsg, response string)) {
+	c.postChatHook = hook
+}
 
 // SetPreChatHook sets a callback invoked when the user sends a message,
 // before emotion evaluation and LLM processing.
@@ -74,7 +76,7 @@ func NewChatOrchestrator(
 		emotionStore:   emotionStore,
 		recall:         recall,
 		worker:         worker,
-		buffer:       buffer,
+		buffer:         buffer,
 		executor:       executor,
 		promptBldr:     promptBldr,
 		screenObserver: screenObserver,
@@ -509,4 +511,3 @@ func memoContent(m *types.Message) string {
 	}
 	return m.Content
 }
-

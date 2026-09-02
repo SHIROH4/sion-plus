@@ -37,7 +37,8 @@ func DefaultEvidenceConfig() types.EvidenceConfig {
 // ── Core Functions ──
 
 // EffectiveReinforcement computes decayed reinforcement at now.
-//   rein * 0.5^(age_days / half_life_days)
+//
+//	rein * 0.5^(age_days / half_life_days)
 func EffectiveReinforcement(entry types.MemoryEvidenceEntry, now time.Time, halfLifeDays float64) float64 {
 	r := entry.Reinforcement
 	if r <= 0 {

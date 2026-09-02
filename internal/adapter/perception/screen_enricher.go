@@ -18,7 +18,7 @@ type ScreenEnrichment struct {
 	Activity      string `json:"activity"`       // "debugging Go code", "watching YouTube", etc.
 	UserMood      string `json:"user_mood"`      // "focused", "frustrated", "relaxed", "distracted"
 	UserEmotion   string `json:"user_emotion"`   // primary emotion: "neutral", "happy", "stressed", "angry"
-	ShouldEngage  bool   `json:"should_engage"`   // is this a good time to interact?
+	ShouldEngage  bool   `json:"should_engage"`  // is this a good time to interact?
 	EngageReason  string `json:"engage_reason"`  // why/why not
 	SuggestedTone string `json:"suggested_tone"` // "playful", "supportive", "concise", "quiet"
 	ObservedText  string `json:"observed_text"`  // any visible text/code the AI noticed
@@ -27,12 +27,12 @@ type ScreenEnrichment struct {
 // ScreenLLMEnricher uses a vision-capable LLM to analyze screenshots.
 // Only used on-demand (proactive triggers), not every chat turn.
 type ScreenLLMEnricher struct {
-	executor     port.LLMExecutor
-	observer     *ScreenObserver
-	machine      *ActivityStateMachine
-	lastResult   *ScreenEnrichment
-	lastCallAt   time.Time
-	minInterval  time.Duration
+	executor    port.LLMExecutor
+	observer    *ScreenObserver
+	machine     *ActivityStateMachine
+	lastResult  *ScreenEnrichment
+	lastCallAt  time.Time
+	minInterval time.Duration
 }
 
 func NewScreenLLMEnricher(executor port.LLMExecutor, observer *ScreenObserver, machine *ActivityStateMachine) *ScreenLLMEnricher {

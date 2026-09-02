@@ -13,7 +13,7 @@ type EmotionService struct {
 	Store     port.EmotionStateManager
 	Evaluator port.EmotionSignalSource
 
-	executor port.LLMExecutor
+	executor  port.LLMExecutor
 	statePath string
 }
 

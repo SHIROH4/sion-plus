@@ -18,13 +18,13 @@ import (
 // ScreenObserver implements port.ScreenObserver for macOS.
 // Uses osascript for window info, ioreg for idle time, screencapture for screenshots.
 type ScreenObserver struct {
-	classifier    *AppClassifier
-	lastApp       string
-	lastTitle     string
-	lastSwitchAt  time.Time
-	switchCount   int
-	switchWindow  time.Duration // 5-minute window for switch counting
-	available     bool
+	classifier   *AppClassifier
+	lastApp      string
+	lastTitle    string
+	lastSwitchAt time.Time
+	switchCount  int
+	switchWindow time.Duration // 5-minute window for switch counting
+	available    bool
 }
 
 var _ port.ScreenObserver = (*ScreenObserver)(nil)

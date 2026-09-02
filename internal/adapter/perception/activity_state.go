@@ -10,15 +10,15 @@ import (
 type ActivityState string
 
 const (
-	StateAway       ActivityState = "away"
-	StatePrivate    ActivityState = "private"
-	StateGaming     ActivityState = "gaming"
-	StateFocused    ActivityState = "focused"
-	StateBrowsing   ActivityState = "browsing"
-	StateChatting   ActivityState = "chatting"
-	StateMeeting    ActivityState = "meeting"
-	StateIdle       ActivityState = "idle"
-	StateUnknown    ActivityState = "unknown"
+	StateAway     ActivityState = "away"
+	StatePrivate  ActivityState = "private"
+	StateGaming   ActivityState = "gaming"
+	StateFocused  ActivityState = "focused"
+	StateBrowsing ActivityState = "browsing"
+	StateChatting ActivityState = "chatting"
+	StateMeeting  ActivityState = "meeting"
+	StateIdle     ActivityState = "idle"
+	StateUnknown  ActivityState = "unknown"
 )
 
 // ── Propensity ──────────────────────────────────────────────────────
@@ -26,10 +26,10 @@ const (
 type Propensity string
 
 const (
-	PropensityClosed             Propensity = "closed"
-	PropensityRestricted         Propensity = "restricted"
-	PropensityOpen               Propensity = "open"
-	PropensityGreeting           Propensity = "greeting"
+	PropensityClosed     Propensity = "closed"
+	PropensityRestricted Propensity = "restricted"
+	PropensityOpen       Propensity = "open"
+	PropensityGreeting   Propensity = "greeting"
 )
 
 // ── Tone ────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ type ActivitySnapshot struct {
 	IdleSec     float64       `json:"idle_sec"`
 	SwitchCount int           `json:"switch_count"`
 	FocusMin    float64       `json:"focus_min"` // minutes in focused state
-	StaleSec    float64       `json:"stale_sec"`  // seconds since left away state
+	StaleSec    float64       `json:"stale_sec"` // seconds since left away state
 }
 
 // ── ActivityStateMachine ────────────────────────────────────────────

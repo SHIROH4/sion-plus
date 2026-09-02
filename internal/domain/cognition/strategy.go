@@ -136,9 +136,9 @@ func timeBucket(hour int) string {
 
 // StuckActionInfo describes an action that may be stuck in a loop.
 type StuckActionInfo struct {
-	Action        string  `json:"action"`
-	ConsecutiveCount int  `json:"consecutive_count"`
-	AvgReward     float64 `json:"avg_reward"`
+	Action           string  `json:"action"`
+	ConsecutiveCount int     `json:"consecutive_count"`
+	AvgReward        float64 `json:"avg_reward"`
 }
 
 // DetectStuckActions finds actions that have been repeated consecutively

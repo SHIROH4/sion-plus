@@ -24,10 +24,10 @@ type StrategyAgentImpl struct {
 	executor    port.LLMExecutor
 	memoryStore port.MemoryStore
 
-	cfg        cognition.StrategyConfig
-	lastRunAt  int64
-	interactionCount int
-	outcomeCount     int
+	cfg                 cognition.StrategyConfig
+	lastRunAt           int64
+	interactionCount    int
+	outcomeCount        int
 	maxEmotionIntensity float64
 }
 

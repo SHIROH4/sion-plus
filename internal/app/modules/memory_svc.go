@@ -11,13 +11,13 @@ import (
 // MemoryService wraps the memory stack as a Module.
 // Manages MemoryWorker, Compressor, SessionBuffer, and LLMHooks lifecycle.
 type MemoryService struct {
-	Worker    *memory.MemoryWorker
-	Buffer    port.SessionBuffer
-	Recall    port.MemoryRecall
-	Compress  *memory.Compressor
-	Evidence  *memory.EvidenceEngine
-	Store     port.MemoryStore
-	EventLog  *memory.EventLog
+	Worker   *memory.MemoryWorker
+	Buffer   port.SessionBuffer
+	Recall   port.MemoryRecall
+	Compress *memory.Compressor
+	Evidence *memory.EvidenceEngine
+	Store    port.MemoryStore
+	EventLog *memory.EventLog
 
 	executor port.LLMExecutor // for LLMHooks injection
 }

@@ -133,10 +133,10 @@ const (
 )
 
 type EvidenceSignal struct {
-	EntryID  int64             `json:"entry_id"`
+	EntryID  int64              `json:"entry_id"`
 	Type     EvidenceSignalType `json:"type"`
-	Strength float64           `json:"strength"` // -1.0 ~ +1.0
-	Source   string            `json:"source"`
+	Strength float64            `json:"strength"` // -1.0 ~ +1.0
+	Source   string             `json:"source"`
 }
 
 // ── Memory Retrieval ──
@@ -169,9 +169,9 @@ type ChatMemorySink interface {
 }
 
 type MemorySearchResult struct {
-	ID       int64             `json:"id"`
-	Content  string            `json:"content"`
-	Source   string            `json:"source"` // "fact"|"diary"|"strategy"
-	Score    float64           `json:"score"`
+	ID       int64                   `json:"id"`
+	Content  string                  `json:"content"`
+	Source   string                  `json:"source"` // "fact"|"diary"|"strategy"
+	Score    float64                 `json:"score"`
 	Evidence *types.EvidenceSnapshot `json:"evidence,omitempty"`
 }

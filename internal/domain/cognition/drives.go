@@ -124,15 +124,23 @@ func computeExplore(f *types.QuantifiedFeatures, needs *types.IntrinsicNeeds) fl
 // ── Helpers ──
 
 func clamp01(v float64) float64 {
-	if v < 0 { return 0 }
-	if v > 1 { return 1 }
+	if v < 0 {
+		return 0
+	}
+	if v > 1 {
+		return 1
+	}
 	return v
 }
 
 // interactionGate: acceptance rate < 0.5 softens social/care drives.
 func interactionGate(acceptRate float64) float64 {
-	if acceptRate <= 0 { return 1.0 }
-	if acceptRate >= 0.5 { return 1.0 }
+	if acceptRate <= 0 {
+		return 1.0
+	}
+	if acceptRate >= 0.5 {
+		return 1.0
+	}
 	return 0.5 + acceptRate
 }
 
@@ -165,12 +173,16 @@ func timeNorm(minSinceChat float64) float64 {
 }
 
 func hasAny(count int) float64 {
-	if count > 0 { return 0.6 }
+	if count > 0 {
+		return 0.6
+	}
 	return 0
 }
 
 func hasAnyInt(count int) float64 {
-	if count > 0 { return 0.4 }
+	if count > 0 {
+		return 0.4
+	}
 	return 0
 }
 
@@ -183,6 +195,8 @@ func inquiryNorm(count int) float64 {
 }
 
 func actionBias(dailyActions int) float64 {
-	if dailyActions >= 10 { return 1.0 }
+	if dailyActions >= 10 {
+		return 1.0
+	}
 	return clamp01(float64(dailyActions) / 10.0)
 }

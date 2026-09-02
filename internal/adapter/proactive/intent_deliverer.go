@@ -49,20 +49,20 @@ func (d *intentDeliverer) Deliver(ctx context.Context, intents []types.Proactive
 	result.Output = resp
 	result.Delivered = len(intents)
 
-		// Push to SSE — matching oyasumi-sion: chat-message topic for both windows
-		if d.broker != nil {
-			d.broker.Publish("chat-message", map[string]string{
-				"role":    "assistant",
-				"content": resp,
-			})
-		}
+	// Push to SSE — matching oyasumi-sion: chat-message topic for both windows
+	if d.broker != nil {
+		d.broker.Publish("chat-message", map[string]string{
+			"role":    "assistant",
+			"content": resp,
+		})
+	}
 
-		// Persist to chat history so it survives restarts
-		if d.store != nil {
-			_ = d.store.SaveHistory(ctx, []types.Message{
-				{Role: "assistant", Content: resp},
-			})
-		}
+	// Persist to chat history so it survives restarts
+	if d.store != nil {
+		_ = d.store.SaveHistory(ctx, []types.Message{
+			{Role: "assistant", Content: resp},
+		})
+	}
 
 	log.Printf("[IntentDeliverer] delivered %d intent(s): %.80s...", len(intents), resp)
 	return result, nil

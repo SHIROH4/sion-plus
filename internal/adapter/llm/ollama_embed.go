@@ -17,11 +17,11 @@ import (
 // Default model: bge-small-zh-v1.5 (512 dimensions).
 // If Ollama is unavailable, falls back to the configured remote embedding provider.
 type OllamaEmbedding struct {
-	baseURL    string
-	model      string
-	dimension  int
-	client     *http.Client
-	remote     port.EmbeddingService // fallback when Ollama is down
+	baseURL   string
+	model     string
+	dimension int
+	client    *http.Client
+	remote    port.EmbeddingService // fallback when Ollama is down
 }
 
 var _ port.EmbeddingService = (*OllamaEmbedding)(nil)

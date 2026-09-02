@@ -10,8 +10,8 @@ import (
 
 	"gopkg.in/yaml.v3"
 
-	"github.com/SHIROH4/sion-plus/internal/domain/types"
 	derr "github.com/SHIROH4/sion-plus/internal/domain/errors"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
@@ -133,13 +133,13 @@ func (m *ConfigManagerImpl) Validate(cfg *port.AppConfig) error {
 	for i, p := range cfg.Providers {
 		if p.BaseURL == "" {
 			failures = append(failures, derr.ValidationFailure{
-				Field: fmt.Sprintf("providers[%d].base_url", i),
+				Field:   fmt.Sprintf("providers[%d].base_url", i),
 				Message: "base_url is required for each provider",
 			})
 		}
 		if p.ChatModel == "" {
 			failures = append(failures, derr.ValidationFailure{
-				Field: fmt.Sprintf("providers[%d].chat_model", i),
+				Field:   fmt.Sprintf("providers[%d].chat_model", i),
 				Message: "chat_model is required for each provider",
 			})
 		}

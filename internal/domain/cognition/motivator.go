@@ -5,10 +5,10 @@ import "github.com/SHIROH4/sion-plus/internal/domain/types"
 // ── Action Scoring: Drive Dot-Product + Context Modulation ──
 
 // ScoreActions computes final scores for all 16 actions.
-//   1. baseScore = drive · weight_vector (dot product)
-//   2. careSuggestion bonus (if CareEngine suggested this action type)
-//   3. contextModulator multiplier (history, time-window, engagement)
-//   4. Hard gate filter (night, quota, consecutive unanswered)
+//  1. baseScore = drive · weight_vector (dot product)
+//  2. careSuggestion bonus (if CareEngine suggested this action type)
+//  3. contextModulator multiplier (history, time-window, engagement)
+//  4. Hard gate filter (night, quota, consecutive unanswered)
 func ScoreActions(
 	drives *types.DriveVector,
 	features *types.QuantifiedFeatures,

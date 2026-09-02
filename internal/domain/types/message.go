@@ -23,9 +23,9 @@ const (
 type Message struct {
 	Role      MessageRole `json:"role"`
 	Content   string      `json:"content"`
-	Images    []string    `json:"images,omitempty"`  // base64 encoded
+	Images    []string    `json:"images,omitempty"` // base64 encoded
 	Metadata  MessageMeta `json:"meta,omitempty"`
-	CreatedAt int64       `json:"created_at"`        // unix seconds
+	CreatedAt int64       `json:"created_at"` // unix seconds
 }
 
 // MessageMeta carries compression-level metadata for inline archive markers.
@@ -42,7 +42,7 @@ type ChatContext struct {
 	Messages         []Message
 	UserMessage      string
 	SystemPrompt     string
-	RecentTurns      string   // formatted recent conversation for LLM
+	RecentTurns      string // formatted recent conversation for LLM
 	RetrievedFacts   []FactEntry
 	RetrievedDiaries []DiaryEntry
 	Emotion          EmotionState

@@ -60,16 +60,16 @@ type ToolRegistry struct {
 	resultCache map[string]toolCacheEntry
 
 	// Stats
-	totalCalls    int
-	totalErrors   int
-	totalDeduped  int
-	lastCallAt    time.Time
+	totalCalls   int
+	totalErrors  int
+	totalDeduped int
+	lastCallAt   time.Time
 }
 
 func NewToolRegistry() *ToolRegistry {
 	return &ToolRegistry{
-		tools:        make(map[string]*ToolDef),
-		resultCache:  make(map[string]toolCacheEntry),
+		tools:       make(map[string]*ToolDef),
+		resultCache: make(map[string]toolCacheEntry),
 	}
 }
 

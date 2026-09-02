@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
-	
+
 	"testing"
 	"time"
 
@@ -139,8 +139,8 @@ func TestLLMHooksSignalDetection(t *testing.T) {
 		Entity: "master", RelationType: "preference", Content: "likes Go",
 		SourceTier: types.SourceExplicit, TemporalScope: types.ScopePattern,
 		Importance: 7, Source: "chat", MemCellType: "fact",
-		Evidence:   types.MemoryEvidenceEntry{Reinforcement: 1.0, ReinLastSignalAt: time.Now().Unix()},
-		CreatedAt:  time.Now().Unix(),
+		Evidence:  types.MemoryEvidenceEntry{Reinforcement: 1.0, ReinLastSignalAt: time.Now().Unix()},
+		CreatedAt: time.Now().Unix(),
 	}
 	if err := store.SaveFact(context.Background(), existing); err != nil {
 		t.Fatalf("SaveFact: %v", err)

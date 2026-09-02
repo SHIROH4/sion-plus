@@ -46,10 +46,10 @@ const (
 // UserCareState tracks the user's wellbeing for the care engine.
 type UserCareState struct {
 	ContinuousWorkMin int   `json:"continuous_work_min"`
-	LastMealAt        int64 `json:"last_meal_at"`         // unix seconds
+	LastMealAt        int64 `json:"last_meal_at"` // unix seconds
 	LastRestAt        int64 `json:"last_rest_at"`
 	LastHydrationAt   int64 `json:"last_hydration_at"`
-	FatigueMentions   int   `json:"fatigue_mentions"`     // count in last 24h
+	FatigueMentions   int   `json:"fatigue_mentions"` // count in last 24h
 	StressMentions    int   `json:"stress_mentions"`
 	IsActive          bool  `json:"is_active"`
 	UpdatedAt         int64 `json:"updated_at"`
@@ -58,7 +58,7 @@ type UserCareState struct {
 // CareAction is a care suggestion emitted by the care engine.
 type CareAction struct {
 	Message  string `json:"message"`
-	Source   string `json:"source"`    // "rest"|"meal"|"hydration"|"health"|"encourage"
+	Source   string `json:"source"` // "rest"|"meal"|"hydration"|"health"|"encourage"
 	Priority int    `json:"priority"`
-	Observed string `json:"observed"`  // what triggered this action
+	Observed string `json:"observed"` // what triggered this action
 }

@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/chromedp/chromedp"
 	"github.com/SHIROH4/sion-plus/internal/port"
+	"github.com/chromedp/chromedp"
 )
 
 // ── Browser Agent ──────────────────────────────────────────────────
@@ -59,12 +59,12 @@ type BrowserResult struct {
 
 // pageElement is a single interactive DOM element.
 type pageElement struct {
-	Index   int    `json:"index"`
-	Tag     string `json:"tag"`    // a, button, input, select, textarea
-	Type    string `json:"type"`   // submit, text, checkbox, etc. (for inputs)
-	Text    string `json:"text"`   // visible text or value
-	Href    string `json:"href"`   // for links
-	Label   string `json:"label"`  // aria-label or associated label text
+	Index int    `json:"index"`
+	Tag   string `json:"tag"`   // a, button, input, select, textarea
+	Type  string `json:"type"`  // submit, text, checkbox, etc. (for inputs)
+	Text  string `json:"text"`  // visible text or value
+	Href  string `json:"href"`  // for links
+	Label string `json:"label"` // aria-label or associated label text
 }
 
 // browserAction is the LLM's chosen action.

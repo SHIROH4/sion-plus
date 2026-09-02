@@ -83,10 +83,10 @@ type PersonalityWarmStart struct {
 }
 
 type RetrievalConfig struct {
-	BM25Budget   int     `yaml:"bm25_budget"`    // default 10
-	CosineBudget int     `yaml:"cosine_budget"`   // default 10
-	RRFK         float64 `yaml:"rrf_k"`           // default 60
-	FinalBudget  int     `yaml:"final_budget"`    // default 5
+	BM25Budget   int     `yaml:"bm25_budget"`   // default 10
+	CosineBudget int     `yaml:"cosine_budget"` // default 10
+	RRFK         float64 `yaml:"rrf_k"`         // default 60
+	FinalBudget  int     `yaml:"final_budget"`  // default 5
 }
 
 type ProactiveConfig struct {

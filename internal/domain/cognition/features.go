@@ -108,7 +108,9 @@ func ComputeTier1(state *types.CognitionState) *types.QuantifiedFeatures {
 // ── Helper Functions ──
 
 func boolToFloat(b bool) float64 {
-	if b { return 1 }
+	if b {
+		return 1
+	}
 	return 0
 }
 

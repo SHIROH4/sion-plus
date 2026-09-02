@@ -44,8 +44,8 @@ func TestClassifyWorkApps(t *testing.T) {
 func TestClassifyPlayApps(t *testing.T) {
 	c := NewAppClassifier()
 	tests := []struct {
-		app  string
-		sub  string
+		app string
+		sub string
 	}{
 		{"Steam", "gaming"},
 		{"Spotify", "media"},

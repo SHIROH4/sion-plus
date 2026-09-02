@@ -55,8 +55,8 @@ type EmotionStore struct {
 	historyMax int
 
 	// Lifecycle
-	stopCh chan struct{}
-	wg     sync.WaitGroup
+	stopCh    chan struct{}
+	wg        sync.WaitGroup
 	statePath string
 
 	// User activity
@@ -85,22 +85,22 @@ var _ port.EmotionStateManager = (*EmotionStore)(nil)
 // NewEmotionStore creates a store with default 8D values.
 func NewEmotionStore(statePath string) *EmotionStore {
 	e := &EmotionStore{
-		raw: [8]float64{0.5, 0, 0, 0.5, 0.5, 0, 0.5, 0},
-		affection:   0.5,
-		annoyance:   0,
-		loneliness:  0,
-		curiosity:   0.5,
-		confidence:  0.5,
-		sleepiness:  0,
-		playfulness: 0.5,
-		worry:       0,
-		emaAlpha:    0.3,
-		personality: types.DefaultPersonality(),
-		history:     make([]emotionSnapshot, 0, 100),
-		historyMax:  100,
-		statePath:   statePath,
+		raw:          [8]float64{0.5, 0, 0, 0.5, 0.5, 0, 0.5, 0},
+		affection:    0.5,
+		annoyance:    0,
+		loneliness:   0,
+		curiosity:    0.5,
+		confidence:   0.5,
+		sleepiness:   0,
+		playfulness:  0.5,
+		worry:        0,
+		emaAlpha:     0.3,
+		personality:  types.DefaultPersonality(),
+		history:      make([]emotionSnapshot, 0, 100),
+		historyMax:   100,
+		statePath:    statePath,
 		lastActivity: time.Now(),
-		circadian:   defaultCircadian,
+		circadian:    defaultCircadian,
 	}
 	// Decay rates: neutral=0.02, annoyed=0.05, sleepy growth=0.03
 	e.decayRates = [8]float64{
@@ -156,12 +156,12 @@ func (e *EmotionStore) tick() {
 	hour := now.Hour()
 
 	// ── Decay toward neutral ──
-	e.affection  += (0.5 - e.affection) * e.decayRates[dimAffection]
-	e.annoyance  += (0.0 - e.annoyance) * e.decayRates[dimAnnoyance]
-	e.curiosity  += (0.5 - e.curiosity) * e.decayRates[dimCuriosity]
+	e.affection += (0.5 - e.affection) * e.decayRates[dimAffection]
+	e.annoyance += (0.0 - e.annoyance) * e.decayRates[dimAnnoyance]
+	e.curiosity += (0.5 - e.curiosity) * e.decayRates[dimCuriosity]
 	e.confidence += (0.5 - e.confidence) * e.decayRates[dimConfidence]
 	e.playfulness += (0.5 - e.playfulness) * e.decayRates[dimPlayfulness]
-	e.worry      += (0.0 - e.worry) * e.decayRates[dimWorry]
+	e.worry += (0.0 - e.worry) * e.decayRates[dimWorry]
 
 	// ── Loneliness: time-driven ──
 	if time.Since(e.lastActivity) > 30*time.Minute {
@@ -247,7 +247,7 @@ func (e *EmotionStore) padFromVector(vec types.EmotionVector) padTriple {
 		vec.Sleepiness*0.5 - vec.Loneliness*0.3
 
 	// Dominance: confidence minus submissive/withdrawn factors
-	dominance := (vec.Confidence - 0.5)*0.7 - vec.Loneliness*0.5 - vec.Worry*0.6 - vec.Annoyance*0.3
+	dominance := (vec.Confidence-0.5)*0.7 - vec.Loneliness*0.5 - vec.Worry*0.6 - vec.Annoyance*0.3
 
 	return padTriple{
 		Valence:   types.Clamp1(valence),
@@ -341,14 +341,14 @@ func (e *EmotionStore) addRaw(dim int, delta float64) {
 // alpha = 0.3 means 30% new signal, 70% existing state.
 func (e *EmotionStore) applyEMA() {
 	alpha := e.emaAlpha
-	e.affection   = e.emaBlend(e.affection, e.raw[dimAffection]+0.5, alpha) // raw is delta, recenter to 0~1
-	e.annoyance   = e.emaBlend(e.annoyance, clamp0(e.raw[dimAnnoyance]), alpha)
-	e.loneliness  = e.emaBlend(e.loneliness, clamp0(e.raw[dimLoneliness]), alpha)
-	e.curiosity   = e.emaBlend(e.curiosity, e.raw[dimCuriosity]+0.5, alpha)
-	e.confidence  = e.emaBlend(e.confidence, e.raw[dimConfidence]+0.5, alpha)
-	e.sleepiness  = e.emaBlend(e.sleepiness, clamp0(e.raw[dimSleepiness]), alpha)
+	e.affection = e.emaBlend(e.affection, e.raw[dimAffection]+0.5, alpha) // raw is delta, recenter to 0~1
+	e.annoyance = e.emaBlend(e.annoyance, clamp0(e.raw[dimAnnoyance]), alpha)
+	e.loneliness = e.emaBlend(e.loneliness, clamp0(e.raw[dimLoneliness]), alpha)
+	e.curiosity = e.emaBlend(e.curiosity, e.raw[dimCuriosity]+0.5, alpha)
+	e.confidence = e.emaBlend(e.confidence, e.raw[dimConfidence]+0.5, alpha)
+	e.sleepiness = e.emaBlend(e.sleepiness, clamp0(e.raw[dimSleepiness]), alpha)
 	e.playfulness = e.emaBlend(e.playfulness, e.raw[dimPlayfulness]+0.5, alpha)
-	e.worry       = e.emaBlend(e.worry, clamp0(e.raw[dimWorry]), alpha)
+	e.worry = e.emaBlend(e.worry, clamp0(e.raw[dimWorry]), alpha)
 
 	// Reset raw deltas after blending (they accumulate between ticks)
 	for i := range e.raw {
@@ -440,8 +440,8 @@ func (e *EmotionStore) Load(ctx context.Context) error {
 	}
 	var saved struct {
 		Affection, Annoyance, Loneliness, Curiosity, Confidence float64
-		Sleepiness, Playfulness, Worry float64
-		Personality types.PersonalityScale
+		Sleepiness, Playfulness, Worry                          float64
+		Personality                                             types.PersonalityScale
 	}
 	if err := json.Unmarshal(data, &saved); err != nil {
 		return nil
@@ -466,8 +466,8 @@ func (e *EmotionStore) Save(ctx context.Context) error {
 	}
 	saved := struct {
 		Affection, Annoyance, Loneliness, Curiosity, Confidence float64
-		Sleepiness, Playfulness, Worry float64
-		Personality types.PersonalityScale
+		Sleepiness, Playfulness, Worry                          float64
+		Personality                                             types.PersonalityScale
 	}{
 		e.affection, e.annoyance, e.loneliness, e.curiosity, e.confidence,
 		e.sleepiness, e.playfulness, e.worry,

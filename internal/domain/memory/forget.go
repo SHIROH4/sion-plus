@@ -13,9 +13,9 @@ import "time"
 // A fact is "forgotten" when its decay weight falls below the active threshold.
 
 const (
-	ActiveThreshold    = 0.05
-	CoreThreshold      = 0.4
-	DefaultHalfLifeDays = 30.0
+	ActiveThreshold       = 0.05
+	CoreThreshold         = 0.4
+	DefaultHalfLifeDays   = 30.0
 	DefaultBoostPerRecall = 0.15
 )
 

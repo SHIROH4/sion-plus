@@ -1,10 +1,10 @@
 // Package errors defines the structured error types used across the project.
 //
 // Design rules:
-//   1. Sentinel errors for well-known failure modes (callers use errors.Is).
-//   2. RetryableError wraps transient failures with a suggested backoff duration.
-//   3. Adapter layer returns these; application layer decides whether to degrade.
-//   4. Never panic — always return an error from this package.
+//  1. Sentinel errors for well-known failure modes (callers use errors.Is).
+//  2. RetryableError wraps transient failures with a suggested backoff duration.
+//  3. Adapter layer returns these; application layer decides whether to degrade.
+//  4. Never panic — always return an error from this package.
 package errors
 
 import (
@@ -72,8 +72,8 @@ func NewRetryable(err error, after time.Duration) *RetryableError {
 // DegradedError indicates the operation succeeded but with reduced quality.
 // Application layer logs these at Warn level rather than Error.
 type DegradedError struct {
-	Err     error
-	Reason  string // "llm_unavailable_used_cache" | "vector_unavailable_used_keyword" | "ocr_failed_used_title"
+	Err    error
+	Reason string // "llm_unavailable_used_cache" | "vector_unavailable_used_keyword" | "ocr_failed_used_title"
 }
 
 func (e *DegradedError) Error() string {

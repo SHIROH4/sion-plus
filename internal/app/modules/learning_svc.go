@@ -13,9 +13,9 @@ import (
 // LearningService wraps the learning stack (Learner + StrategyAgent + CuriosityEngine)
 // as a Module with background scheduling.
 type LearningService struct {
-	Learner     port.Learner
-	Strategy    port.StrategyAgent
-	Curiosity   port.CuriosityEngine
+	Learner   port.Learner
+	Strategy  port.StrategyAgent
+	Curiosity port.CuriosityEngine
 
 	executor    port.LLMExecutor
 	memoryStore port.MemoryStore

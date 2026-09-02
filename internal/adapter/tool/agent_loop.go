@@ -13,8 +13,8 @@ import (
 
 // AgentLoopConfig configures the ReAct agent loop.
 type AgentLoopConfig struct {
-	MaxToolRounds  int           // max tool call iterations (default 10)
-	ToolTimeout    time.Duration // per-tool execution timeout (default 30s)
+	MaxToolRounds    int                                         // max tool call iterations (default 10)
+	ToolTimeout      time.Duration                               // per-tool execution timeout (default 30s)
 	DangerousApprove func(name string, args map[string]any) bool // nil = auto-approve
 }
 
@@ -28,11 +28,11 @@ func DefaultAgentConfig() AgentLoopConfig {
 
 // AgentLoopResult is the output of a complete agent run.
 type AgentLoopResult struct {
-	Response     string       `json:"response"`
-	ToolCalls    []ToolResult `json:"tool_calls,omitempty"`
-	Rounds       int          `json:"rounds"`
-	Duration     string       `json:"duration"`
-	Truncated    bool         `json:"truncated,omitempty"`
+	Response  string       `json:"response"`
+	ToolCalls []ToolResult `json:"tool_calls,omitempty"`
+	Rounds    int          `json:"rounds"`
+	Duration  string       `json:"duration"`
+	Truncated bool         `json:"truncated,omitempty"`
 }
 
 // AgentLoop executes the ReAct loop:
@@ -98,7 +98,7 @@ func (r *ToolRegistry) AgentLoop(
 				resp, _ := json.Marshal(result)
 				return string(resp)
 			},
-			1,  // maxRounds for ChatWithTools (single round, loop is ours)
+			1, // maxRounds for ChatWithTools (single round, loop is ours)
 			"auto",
 		)
 

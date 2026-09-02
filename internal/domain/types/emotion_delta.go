@@ -13,7 +13,7 @@ type EmotionDelta struct {
 	Confidence  float64 `json:"confidence"`
 	Annoyance   float64 `json:"annoyance"`
 	Source      string  `json:"source,omitempty"` // "chat", "screen", "proactive", "system"
-	Reason      string  `json:"reason,omitempty"`  // LLM self-explanation (debug aid)
+	Reason      string  `json:"reason,omitempty"` // LLM self-explanation (debug aid)
 }
 
 // ClampDelta bounds each dimension to [-1, 1].

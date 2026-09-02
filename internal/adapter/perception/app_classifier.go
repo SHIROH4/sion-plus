@@ -107,10 +107,9 @@ func matchExact(name string) *port.AppClassification {
 		contains(name, "quicktime"), contains(name, "preview"), contains(name, "photos"):
 		return &port.AppClassification{Primary: "play", Subtype: "media", IsWorking: false}
 
-
-		// ── Self (safety net — Sion's own process) ──
-		case contains(name, "electron"), contains(name, "sion"):
-			return &port.AppClassification{Primary: "idle", Subtype: "self", IsWorking: false}
+	// ── Self (safety net — Sion's own process) ──
+	case contains(name, "electron"), contains(name, "sion"):
+		return &port.AppClassification{Primary: "idle", Subtype: "self", IsWorking: false}
 
 	// ── System ──
 	case contains(name, "finder"), contains(name, "访达"), contains(name, "settings"),

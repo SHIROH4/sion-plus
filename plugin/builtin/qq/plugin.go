@@ -13,11 +13,11 @@ import (
 // Plugin implements sdk.Plugin for the QQ Bot module.
 type Plugin struct {
 	sdk.BasePlugin
-	pctx    *sdk.PluginContext
-	mu      sync.Mutex
-	conn    QQConnection
-	stopCh  chan struct{}
-	msgCh   chan QQMessage
+	pctx   *sdk.PluginContext
+	mu     sync.Mutex
+	conn   QQConnection
+	stopCh chan struct{}
+	msgCh  chan QQMessage
 }
 
 // QQConnection abstracts the QQ Bot WebSocket connection.

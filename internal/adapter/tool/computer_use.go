@@ -57,7 +57,7 @@ type macOSObserver struct{ available bool }
 func NewMacOSObserver() *macOSObserver {
 	return &macOSObserver{available: runtime.GOOS == "darwin"}
 }
-func (o *macOSObserver) IsAvailable() bool        { return o.available }
+func (o *macOSObserver) IsAvailable() bool { return o.available }
 func (o *macOSObserver) CaptureScreenshot(ctx context.Context) ([]byte, error) {
 	if !o.available {
 		return nil, fmt.Errorf("not on macOS")

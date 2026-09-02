@@ -14,9 +14,9 @@ import (
 // Plugin implements sdk.Plugin for the timer module.
 type Plugin struct {
 	sdk.BasePlugin
-	pctx     *sdk.PluginContext
-	mu       sync.Mutex
-	stopCh   chan struct{}
+	pctx      *sdk.PluginContext
+	mu        sync.Mutex
+	stopCh    chan struct{}
 	schedules []Schedule
 }
 

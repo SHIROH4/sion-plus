@@ -73,9 +73,9 @@ func handleWebSearch(ctx context.Context, args map[string]any) (string, error) {
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
 
 	var ddgResp struct {
-		AbstractText string       `json:"AbstractText"`
-		AbstractURL  string       `json:"AbstractURL"`
-		Results      []ddgResult  `json:"Results"`
+		AbstractText  string      `json:"AbstractText"`
+		AbstractURL   string      `json:"AbstractURL"`
+		Results       []ddgResult `json:"Results"`
 		RelatedTopics []struct {
 			Text     string `json:"Text"`
 			FirstURL string `json:"FirstURL"`

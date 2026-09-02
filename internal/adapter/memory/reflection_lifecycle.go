@@ -292,7 +292,7 @@ func (w *MemoryWorker) runReflectionSignalDetection(ctx context.Context, newRefs
 		sigType := portSignalType(sig.Type)
 		_, err := w.evidence.ApplySignal(ctx, sig.EntryID, port.EvidenceSignal{
 			EntryID: sig.EntryID,
-			Type:   sigType,
+			Type:    sigType,
 		})
 		if err != nil {
 			log.Printf("[ReflectionLifecycle] signal apply failed: %v", err)

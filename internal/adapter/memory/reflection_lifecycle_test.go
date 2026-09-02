@@ -146,13 +146,13 @@ func TestContradictionDetection(t *testing.T) {
 
 	// Two promoted reflections about same entity with opposing evidence
 	a := &types.ReflectionEntry{
-		Text: "主人喜欢安静",
+		Text:   "主人喜欢安静",
 		Entity: "master", Status: "promoted",
 		Reinforcement: 3.0, Disputation: 0.0,
 		CreatedAt: time.Now().Unix(), UpdatedAt: time.Now().Unix(),
 	}
 	b := &types.ReflectionEntry{
-		Text: "主人喜欢热闹",
+		Text:   "主人喜欢热闹",
 		Entity: "master", Status: "promoted",
 		Reinforcement: 0.0, Disputation: 2.0,
 		CreatedAt: time.Now().Unix(), UpdatedAt: time.Now().Unix(),

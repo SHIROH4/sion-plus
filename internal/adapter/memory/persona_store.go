@@ -14,27 +14,28 @@ import (
 // No separate table needed.
 //
 // Entity → RelationType → Value:
-//   "master"        → "preference"    → "likes Go language"
-//   "master"        → "work_pattern"  → "works late at night"
-//   "master"        → "boundary"      → "do not interrupt during debugging"
-//   "neko"          → "self_awareness" → "I should be quiet when master focuses"
-//   "neko"          → "learned"       → "master prefers concise answers"
-//   "relationship"  → "dynamic"       → "master likes morning chats"
+//
+//	"master"        → "preference"    → "likes Go language"
+//	"master"        → "work_pattern"  → "works late at night"
+//	"master"        → "boundary"      → "do not interrupt during debugging"
+//	"neko"          → "self_awareness" → "I should be quiet when master focuses"
+//	"neko"          → "learned"       → "master prefers concise answers"
+//	"relationship"  → "dynamic"       → "master likes morning chats"
 type PersonaStore struct {
 	db *SQLiteStore
 }
 
 // PersonaEntry is a structured identity node derived from a promoted reflection.
 type PersonaEntry struct {
-	ID           int64              `json:"id"`
-	Entity       string             `json:"entity"`
-	RelationType string             `json:"relation_type"`
-	Value        string             `json:"value"`
-	Evidence     PersonaEvidence    `json:"evidence"`
-	Status       string             `json:"status"`
-	SourceCount  int                `json:"source_count"`  // how many facts contributed
-	ContradictedBy []int64          `json:"contradicted_by,omitempty"`
-	CreatedAt    int64              `json:"created_at"`
+	ID             int64           `json:"id"`
+	Entity         string          `json:"entity"`
+	RelationType   string          `json:"relation_type"`
+	Value          string          `json:"value"`
+	Evidence       PersonaEvidence `json:"evidence"`
+	Status         string          `json:"status"`
+	SourceCount    int             `json:"source_count"` // how many facts contributed
+	ContradictedBy []int64         `json:"contradicted_by,omitempty"`
+	CreatedAt      int64           `json:"created_at"`
 }
 
 // PersonaEvidence is the evidence snapshot for a persona entry.
@@ -47,8 +48,8 @@ type PersonaEvidence struct {
 
 // PersonaQuery filters for persona entries.
 type PersonaQuery struct {
-	Entity       string // "master" | "neko" | "relationship" | "" = all
-	RelationType string // specific trait or "" = all
+	Entity       string  // "master" | "neko" | "relationship" | "" = all
+	RelationType string  // specific trait or "" = all
 	MinScore     float64 // minimum evidence score
 	Limit        int
 }

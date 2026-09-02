@@ -30,8 +30,8 @@ func (b *PromptBuilder) SetSelfModel(s string) { b.selfModel = s }
 
 // BuildResult contains the assembled prompt components.
 type BuildResult struct {
-	SystemPrompt string   // fixed personality, cache-stable
-	MemoryContext string  // injected into user message
+	SystemPrompt  string   // fixed personality, cache-stable
+	MemoryContext string   // injected into user message
 	Warnings      []string // budget exceeded warnings
 }
 
@@ -114,7 +114,7 @@ func (b *PromptBuilder) Build(input BuildInput) BuildResult {
 	}
 
 	return BuildResult{
-		SystemPrompt: b.personality,
+		SystemPrompt:  b.personality,
 		MemoryContext: ctx.String(),
 		Warnings:      warnings,
 	}

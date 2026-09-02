@@ -16,14 +16,14 @@ import (
 // ── Mock LLM ─────────────────────────────────────────────────────
 
 type chainMockLLM struct {
-	chatReplies    []string
-	emotionDeltas  []string
-	factExtracts   []string
-	signalDetects  []string
-	chatIdx        int
-	emotionIdx     int
-	factIdx        int
-	signalIdx      int
+	chatReplies   []string
+	emotionDeltas []string
+	factExtracts  []string
+	signalDetects []string
+	chatIdx       int
+	emotionIdx    int
+	factIdx       int
+	signalIdx     int
 }
 
 func (m *chainMockLLM) Chat(ctx context.Context, sp string, msgs []port.LLMMessage) (string, error) {
@@ -61,8 +61,8 @@ func newChainRuntime(t *testing.T) (*AppRuntime, context.Context, func()) {
 
 	mock := &chainMockLLM{
 		chatReplies: []string{
-			"主人今天心情不错呢~",      // chat reply
-			"browser",                 // route channel
+			"主人今天心情不错呢~",    // chat reply
+			"browser",       // route channel
 			"主人我帮你查了一下天气喵~", // postChat proactive
 		},
 	}
@@ -324,7 +324,7 @@ func TestChainToolPipeline(t *testing.T) {
 
 	// edit_file
 	res = r.ToolRegistry.Execute(ctx, "edit_file", map[string]any{
-		"path":      testFile,
+		"path":       testFile,
 		"old_string": "hello world",
 		"new_string": "hello sion",
 	})
@@ -435,4 +435,3 @@ func truncate(s string, n int) string {
 	}
 	return s[:n] + "..."
 }
-

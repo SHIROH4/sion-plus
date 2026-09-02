@@ -16,8 +16,8 @@ import (
 
 // mockLLM returns canned responses keyed by prompt content.
 type mockLLM struct {
-	responses     map[string]string
-	streamChunks  []string // if set, ChatStream sends these chunks
+	responses    map[string]string
+	streamChunks []string // if set, ChatStream sends these chunks
 }
 
 func (m *mockLLM) Chat(ctx context.Context, sp string, msgs []port.LLMMessage) (string, error) {
@@ -418,4 +418,3 @@ func TestChatOrchestratorStreamingEmptyMessage(t *testing.T) {
 		t.Errorf("empty chunks should fallback to mock response, got %q", result.Response)
 	}
 }
-

@@ -64,7 +64,7 @@ func (t *TrackedExecutor) IsAvailable(ctx context.Context) bool {
 
 func (t *TrackedExecutor) record(ctx context.Context, promptChars, completionChars int) {
 	// Rough estimate: ~4 chars per token for CJK, ~3 for Latin. Use 3.5 as avg.
-	promptTokens := promptChars * 10 / 35  // chars / 3.5
+	promptTokens := promptChars * 10 / 35 // chars / 3.5
 	completionTokens := completionChars * 10 / 35
 	if promptTokens < 1 {
 		promptTokens = 1

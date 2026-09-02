@@ -11,9 +11,9 @@ import (
 
 // LLMService wraps the LLM stack as a Module.
 type LLMService struct {
-	Registry    *llm.ProviderRegistry
-	Tokenizer   *llm.TokenTracker
-	Executor    port.LLMExecutor // primary tracked executor ("chat" route)
+	Registry  *llm.ProviderRegistry
+	Tokenizer *llm.TokenTracker
+	Executor  port.LLMExecutor // primary tracked executor ("chat" route)
 
 	providers []port.LLMProviderConfig
 	routes    port.LLMRoutes

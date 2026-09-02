@@ -38,7 +38,7 @@ type MemoryWorker struct {
 	// State
 	mu                   sync.Mutex
 	running              bool
-	processing           bool   // CAS flag: true when a worker is processing a wake signal
+	processing           bool // CAS flag: true when a worker is processing a wake signal
 	turnsSinceExtraction int
 	lastExtractionAt     time.Time
 	lastReflectionAt     time.Time
@@ -75,12 +75,12 @@ type ReflectAndDiaryResult struct {
 
 // MemoryWorkerConfig tunes worker behaviour.
 type MemoryWorkerConfig struct {
-	PoolSize          int           // goroutine pool size (default 3)
-	ExtractEveryN     int           // extract facts every N turns (default 10)
-	ExtractIdleMin    int           // or when idle for N minutes (default 5)
-	ReflectionMaxGap  time.Duration // max gap between reflections (default 4h)
-	MaintenanceTick   time.Duration // maintenance interval (default 30min)
-	ArchiveTick       time.Duration // archive sweep interval (default 1h)
+	PoolSize         int           // goroutine pool size (default 3)
+	ExtractEveryN    int           // extract facts every N turns (default 10)
+	ExtractIdleMin   int           // or when idle for N minutes (default 5)
+	ReflectionMaxGap time.Duration // max gap between reflections (default 4h)
+	MaintenanceTick  time.Duration // maintenance interval (default 30min)
+	ArchiveTick      time.Duration // archive sweep interval (default 1h)
 }
 
 // DefaultWorkerConfig returns sensible defaults.
@@ -105,14 +105,14 @@ func NewMemoryWorker(
 	cfg MemoryWorkerConfig,
 ) *MemoryWorker {
 	w := &MemoryWorker{
-		store:      store,
-		evidence:   evidence,
-		recall:     recall,
-		buffer:     buffer,
-		compress:   compress,
-		wakeCh:         make(chan struct{}, 64),
-		stopCh:         make(chan struct{}),
-		promoteFailures: make(map[int64]int),
+		store:            store,
+		evidence:         evidence,
+		recall:           recall,
+		buffer:           buffer,
+		compress:         compress,
+		wakeCh:           make(chan struct{}, 64),
+		stopCh:           make(chan struct{}),
+		promoteFailures:  make(map[int64]int),
 		lastExtractionAt: time.Now(),
 		lastReflectionAt: time.Now(),
 		lastArchiveSweep: time.Now(),
@@ -372,8 +372,8 @@ func (w *MemoryWorker) runSignalDetection(ctx context.Context, newFacts []types.
 		sigType := portSignalType(r.Type)
 		_, err := w.evidence.ApplySignal(ctx, r.EntryID, port.EvidenceSignal{
 			EntryID: r.EntryID,
-			Type:   sigType,
-			Source: r.Source,
+			Type:    sigType,
+			Source:  r.Source,
 		})
 		if err != nil {
 			log.Printf("[MemoryWorker] ApplySignal failed: %v", err)

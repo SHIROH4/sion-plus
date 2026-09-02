@@ -8,8 +8,8 @@ import (
 
 func TestIdleBonus(t *testing.T) {
 	tests := []struct {
-		name   string
-		mins   float64
+		name    string
+		mins    float64
 		wantMin float64
 		wantMax float64
 	}{
@@ -218,8 +218,8 @@ func TestComputeDrivesHighAnnoyance(t *testing.T) {
 func TestComputeDrivesQuotaProtection(t *testing.T) {
 	f := &types.QuantifiedFeatures{
 		A1_3_Curiosity:       0.8,
-		A11_ActiveInquiries:   3,
-		A12_KnowledgeGaps:     3,
+		A11_ActiveInquiries:  3,
+		A12_KnowledgeGaps:    3,
 		E3_CooldownNorm:      0.8,
 		E4_QuotaRemaining:    2,
 		R1_OverallAcceptRate: 0.7,
@@ -243,8 +243,8 @@ func TestComputeTier1(t *testing.T) {
 			AffectionWarmth:      0.7,
 			WorryTendency:        0.3,
 		},
-		OverallAcceptRate:   0.7,
-		AcceptSampleCount:   10,
+		OverallAcceptRate:     0.7,
+		AcceptSampleCount:     10,
 		HistoryAverageValence: 0.2,
 	}
 

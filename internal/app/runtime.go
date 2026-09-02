@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"runtime"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/SHIROH4/sion-plus/internal/adapter/llm"
@@ -16,8 +16,8 @@ import (
 	"github.com/SHIROH4/sion-plus/internal/adapter/proactive"
 	"github.com/SHIROH4/sion-plus/internal/adapter/tool"
 	"github.com/SHIROH4/sion-plus/internal/app/modules"
-	"github.com/SHIROH4/sion-plus/internal/domain/types"
 	domainMemory "github.com/SHIROH4/sion-plus/internal/domain/memory"
+	"github.com/SHIROH4/sion-plus/internal/domain/types"
 	"github.com/SHIROH4/sion-plus/internal/port"
 )
 
@@ -159,7 +159,7 @@ func (r *AppRuntime) Init(ctx context.Context) error {
 		r.CognitionTick.SetFirstTickDelay(30 * time.Second)
 		r.CognitionTick.SetToolRegistry(r.ToolRegistry)
 		r.Chat.SetPostChatHook(r.CognitionTick.AnalyzePostChat)
-			r.Chat.SetPreChatHook(r.CognitionTick.OnUserMessage)
+		r.Chat.SetPreChatHook(r.CognitionTick.OnUserMessage)
 		log.Println("[Runtime] proactive cognition wired")
 
 		{
@@ -214,7 +214,7 @@ type PersonalityConfig struct {
 	SystemPrompt  string         `json:"system_prompt"`
 	Traits        map[string]int `json:"traits"`
 	SpeakingStyle string         `json:"speaking_style"`
-	Background    string         `json:"background"`              
+	Background    string         `json:"background"`
 }
 
 // LoadPersonalityConfig reads the personality config from disk, falling back to defaults.
@@ -222,9 +222,9 @@ func (r *AppRuntime) LoadPersonalityConfig() (*PersonalityConfig, error) {
 	path := filepath.Join(r.dataDir, "personality.json")
 	data, err := os.ReadFile(path)
 	cfg := &PersonalityConfig{
-		Name:   "Sion",
-		SystemPrompt: r.personality,
-		Traits: map[string]int{"warmth": 8, "playfulness": 7, "formality": 3, "curiosity": 6, "empathy": 8},
+		Name:          "Sion",
+		SystemPrompt:  r.personality,
+		Traits:        map[string]int{"warmth": 8, "playfulness": 7, "formality": 3, "curiosity": 6, "empathy": 8},
 		SpeakingStyle: "",
 		Background:    "",
 	}

@@ -194,11 +194,11 @@ func TestScoreActionsSearchModulators(t *testing.T) {
 	f := &types.QuantifiedFeatures{
 		R1_OverallAcceptRate: 0.7,
 		R1_SampleCount:       10,
-		A11_ActiveInquiries:   5,
-		A12_KnowledgeGaps:     5,
-		A13_LearningMomentum:  0.8,
-		E3_CooldownNorm:       1.0,
-		E4_QuotaRemaining:     10,
+		A11_ActiveInquiries:  5,
+		A12_KnowledgeGaps:    5,
+		A13_LearningMomentum: 0.8,
+		E3_CooldownNorm:      1.0,
+		E4_QuotaRemaining:    10,
 	}
 
 	scored := ScoreActions(drives, f, actions, nil)
@@ -211,10 +211,10 @@ func TestScoreActionsSearchModulators(t *testing.T) {
 	fLow := &types.QuantifiedFeatures{
 		R1_OverallAcceptRate: 0.7,
 		R1_SampleCount:       10,
-		A11_ActiveInquiries:   5,
-		A12_KnowledgeGaps:     5,
-		E3_CooldownNorm:       1.0,
-		E4_QuotaRemaining:     2,
+		A11_ActiveInquiries:  5,
+		A12_KnowledgeGaps:    5,
+		E3_CooldownNorm:      1.0,
+		E4_QuotaRemaining:    2,
 	}
 	scoredLow := ScoreActions(drives, fLow, actions, nil)
 	searchScoreLow := findScore(scoredLow, "search")

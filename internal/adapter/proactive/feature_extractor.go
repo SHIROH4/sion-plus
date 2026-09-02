@@ -31,10 +31,10 @@ type PersonaEvidence struct {
 // FeatureExtractor consolidates emotion, memory, perception, and clock
 // into the QuantifiedFeatures vector used for drive/action scoring.
 type FeatureExtractor struct {
-	emotionStore  port.EmotionStateManager
-	memoryStore   port.MemoryStore
-	screenObs     port.ScreenObserver
-	persona       PersonaQuerier
+	emotionStore port.EmotionStateManager
+	memoryStore  port.MemoryStore
+	screenObs    port.ScreenObserver
+	persona      PersonaQuerier
 }
 
 func NewFeatureExtractor(
@@ -101,7 +101,7 @@ func (e *FeatureExtractor) Extract(ctx context.Context) *types.QuantifiedFeature
 	// ── E组: Environment (Clock) ──
 	f.E1_Hour = hour
 	f.E2_DayOfWeek = int(now.Weekday())
-	f.E3_CooldownNorm = 0.8 // default: mostly available
+	f.E3_CooldownNorm = 0.8  // default: mostly available
 	f.E4_QuotaRemaining = 10 // default: plenty of quota
 
 	// ── R组: Relationship (Memory outcomes) ──

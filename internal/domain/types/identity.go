@@ -4,15 +4,15 @@ package types
 
 // IdentityNode is a node in the identity knowledge graph.
 type IdentityNode struct {
-	ID           int64          `json:"id"`
-	SchemaVersion int           `json:"schema_version"`
-	Label        string         `json:"label"` // "master"|"sion"|"relationship"|"group:xxx"
-	Kind         string         `json:"kind"`  // "user"|"character"|"relationship"
-	Properties   map[string]any `json:"properties"`
-	Embedding    []float32      `json:"embedding,omitempty"`
-	Active       bool           `json:"active"`
-	CreatedAt    int64          `json:"created_at"`
-	UpdatedAt    int64          `json:"updated_at"`
+	ID            int64          `json:"id"`
+	SchemaVersion int            `json:"schema_version"`
+	Label         string         `json:"label"` // "master"|"sion"|"relationship"|"group:xxx"
+	Kind          string         `json:"kind"`  // "user"|"character"|"relationship"
+	Properties    map[string]any `json:"properties"`
+	Embedding     []float32      `json:"embedding,omitempty"`
+	Active        bool           `json:"active"`
+	CreatedAt     int64          `json:"created_at"`
+	UpdatedAt     int64          `json:"updated_at"`
 }
 
 // ── Self Model ──
@@ -40,12 +40,12 @@ type DailyReflectionInput struct {
 
 // DailyReflectionOutput is the structured output of strategic reflection.
 type DailyReflectionOutput struct {
-	SelfModelUpdate        string                `json:"self_model_update"`
-	NewPrinciples           []StrategyPrinciple   `json:"new_principles"`
-	DeactivatePrincipleIDs  []int64               `json:"deactivate_principle_ids"`
-	TacticalDirectives      []string              `json:"tactical_directives"`
-	ThreadRecommendations   []ThreadRecommendation `json:"thread_recommendations"`
-	NarrativeSummary        string                `json:"narrative_summary"`
+	SelfModelUpdate        string                 `json:"self_model_update"`
+	NewPrinciples          []StrategyPrinciple    `json:"new_principles"`
+	DeactivatePrincipleIDs []int64                `json:"deactivate_principle_ids"`
+	TacticalDirectives     []string               `json:"tactical_directives"`
+	ThreadRecommendations  []ThreadRecommendation `json:"thread_recommendations"`
+	NarrativeSummary       string                 `json:"narrative_summary"`
 }
 
 // ThreadRecommendation is a suggestion for thread lifecycle management.

@@ -48,11 +48,11 @@ func NewCognitionTick(
 	executor port.LLMExecutor,
 ) *CognitionTick {
 	return &CognitionTick{
-		gate:      gate,
-		scheduler: scheduler,
-		deliverer: deliverer,
-		extractor: extractor,
-		executor:  executor,
+		gate:           gate,
+		scheduler:      scheduler,
+		deliverer:      deliverer,
+		extractor:      extractor,
+		executor:       executor,
 		interval:       60 * time.Second,
 		firstTickDelay: 30 * time.Second,
 		actions:        cognition.BuildActions(),
@@ -170,15 +170,15 @@ func (t *CognitionTick) run(ctx context.Context) {
 		return
 	}
 
-		// Night gate: pre-filter to NightSafe so System2 doesn't waste rounds
-		// choosing actions that will be hard-blocked anyway.
-		isNight := features.U12_NightTime > 0
-		if isNight {
-			scored = cognition.FilterNightSafe(scored)
-			if len(scored) == 0 {
-				return
-			}
+	// Night gate: pre-filter to NightSafe so System2 doesn't waste rounds
+	// choosing actions that will be hard-blocked anyway.
+	isNight := features.U12_NightTime > 0
+	if isNight {
+		scored = cognition.FilterNightSafe(scored)
+		if len(scored) == 0 {
+			return
 		}
+	}
 
 	// Phase 3: Decision routing
 	decision := cognition.Route(scored, features)
@@ -340,7 +340,7 @@ func (t *CognitionTick) llmDecideWithTools(ctx context.Context, f *types.Quantif
 					"description": "The action to take.",
 				},
 				"reason": map[string]any{
-					"type": "string",
+					"type":        "string",
 					"description": "Brief reason.",
 				},
 			},
@@ -352,18 +352,18 @@ func (t *CognitionTick) llmDecideWithTools(ctx context.Context, f *types.Quantif
 	if t.toolReg != nil {
 		allTools = append(allTools, t.toolReg.Specs()...)
 
-	// At night, skip heavy tools — computer_use is privacy-invasive and browser is unnecessary.
-	// Keep lightweight tools: web_search, exec_command, read_file.
-	if isNight {
-		filtered := make([]port.ToolDef, 0, len(allTools))
-		for _, tool := range allTools {
-			if tool.Name == "computer_use" || tool.Name == "browser" {
-				continue
+		// At night, skip heavy tools — computer_use is privacy-invasive and browser is unnecessary.
+		// Keep lightweight tools: web_search, exec_command, read_file.
+		if isNight {
+			filtered := make([]port.ToolDef, 0, len(allTools))
+			for _, tool := range allTools {
+				if tool.Name == "computer_use" || tool.Name == "browser" {
+					continue
+				}
+				filtered = append(filtered, tool)
 			}
-			filtered = append(filtered, tool)
+			allTools = filtered
 		}
-		allTools = filtered
-	}
 	}
 
 	prompt := buildS2DecisionPrompt(f, topActions, isNight)

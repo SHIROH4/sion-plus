@@ -22,14 +22,14 @@ func newTestEngine(t *testing.T) (*EvidenceEngine, *SQLiteStore) {
 func newTestFact(t *testing.T, store *SQLiteStore, entity, relationType, content string, sourceTier types.FactSourceTier) *types.FactEntry {
 	t.Helper()
 	f := &types.FactEntry{
-		Entity:       entity,
-		RelationType: relationType,
-		Content:      content,
-		SourceTier:   sourceTier,
+		Entity:        entity,
+		RelationType:  relationType,
+		Content:       content,
+		SourceTier:    sourceTier,
 		TemporalScope: types.ScopePattern,
-		Importance:   7,
-		Source:       "chat",
-		MemCellType:  "fact",
+		Importance:    7,
+		Source:        "chat",
+		MemCellType:   "fact",
 		Evidence: types.MemoryEvidenceEntry{
 			Reinforcement:    0.5,
 			ReinLastSignalAt: time.Now().Unix(),
@@ -49,8 +49,8 @@ func TestApplyUserConfirm(t *testing.T) {
 
 	snap, err := eng.ApplySignal(ctx, f.ID, port.EvidenceSignal{
 		EntryID: f.ID,
-		Type:   port.SignalUserConfirm,
-		Source: "chat",
+		Type:    port.SignalUserConfirm,
+		Source:  "chat",
 	})
 	if err != nil {
 		t.Fatalf("ApplySignal: %v", err)
@@ -84,8 +84,8 @@ func TestApplyUserDeny(t *testing.T) {
 
 	snap, err := eng.ApplySignal(ctx, f.ID, port.EvidenceSignal{
 		EntryID: f.ID,
-		Type:   port.SignalUserDeny,
-		Source: "chat",
+		Type:    port.SignalUserDeny,
+		Source:  "chat",
 	})
 	if err != nil {
 		t.Fatalf("ApplySignal: %v", err)
@@ -106,8 +106,8 @@ func TestComboBonus(t *testing.T) {
 	for i := 0; i < 4; i++ {
 		snap, err := eng.ApplySignal(ctx, f.ID, port.EvidenceSignal{
 			EntryID: f.ID,
-			Type:   port.SignalUserFact,
-			Source: "extraction",
+			Type:    port.SignalUserFact,
+			Source:  "extraction",
 		})
 		if err != nil {
 			t.Fatalf("ApplySignal %d: %v", i, err)
@@ -190,19 +190,19 @@ func TestArchiveSweep(t *testing.T) {
 
 	// Create a fact with sub_zero_days >= 7 and score <= 0
 	f := &types.FactEntry{
-		Entity:       "master",
-		RelationType: "emotional",
-		Content:      "should be archived",
-		SourceTier:   types.SourceExplicit,
+		Entity:        "master",
+		RelationType:  "emotional",
+		Content:       "should be archived",
+		SourceTier:    types.SourceExplicit,
 		TemporalScope: types.ScopeState,
-		Source:       "test",
-		MemCellType:  "emotion",
+		Source:        "test",
+		MemCellType:   "emotion",
 		Evidence: types.MemoryEvidenceEntry{
-			Reinforcement:        0,
-			Disputation:          2.0,
-			DispLastSignalAt:     time.Now().Unix(),
-			SubZeroDays:          7,
-			SubZeroLastIncrDate:  time.Now().Format("2006-01-02"),
+			Reinforcement:       0,
+			Disputation:         2.0,
+			DispLastSignalAt:    time.Now().Unix(),
+			SubZeroDays:         7,
+			SubZeroLastIncrDate: time.Now().Format("2006-01-02"),
 		},
 		CreatedAt: time.Now().Unix(),
 	}
@@ -237,8 +237,8 @@ func TestOscillationDetection(t *testing.T) {
 		}
 		_, err := eng.ApplySignal(ctx, f.ID, port.EvidenceSignal{
 			EntryID: f.ID,
-			Type:   sigType,
-			Source: "test",
+			Type:    sigType,
+			Source:  "test",
 		})
 		if err != nil {
 			t.Fatalf("ApplySignal %d: %v", i, err)
@@ -271,8 +271,8 @@ func TestOscillationPenalty(t *testing.T) {
 	// Now apply one more reinforce signal — should be penalized by 0.3
 	snap, _ := eng.ApplySignal(ctx, f.ID, port.EvidenceSignal{
 		EntryID: f.ID,
-		Type:   port.SignalUserConfirm,
-		Source: "test",
+		Type:    port.SignalUserConfirm,
+		Source:  "test",
 	})
 
 	// Normal rein delta for explicit + user_confirm = 0.50
@@ -291,19 +291,19 @@ func TestSubZeroTracking(t *testing.T) {
 
 	// Create a fact already in negative territory
 	f := &types.FactEntry{
-		Entity:       "master",
-		RelationType: "preference",
-		Content:      "subzero test",
-		SourceTier:   types.SourceExplicit,
+		Entity:        "master",
+		RelationType:  "preference",
+		Content:       "subzero test",
+		SourceTier:    types.SourceExplicit,
 		TemporalScope: types.ScopePattern,
-		Source:       "test",
-		MemCellType:  "fact",
+		Source:        "test",
+		MemCellType:   "fact",
 		Evidence: types.MemoryEvidenceEntry{
-			Reinforcement:        0,
-			Disputation:          2.0,
-			DispLastSignalAt:     time.Now().Unix(),
-			SubZeroDays:          3,
-			SubZeroLastIncrDate:  time.Now().Add(-24 * time.Hour).Format("2006-01-02"),
+			Reinforcement:       0,
+			Disputation:         2.0,
+			DispLastSignalAt:    time.Now().Unix(),
+			SubZeroDays:         3,
+			SubZeroLastIncrDate: time.Now().Add(-24 * time.Hour).Format("2006-01-02"),
 		},
 		CreatedAt: time.Now().Unix(),
 	}
@@ -313,8 +313,8 @@ func TestSubZeroTracking(t *testing.T) {
 
 	snap, err := eng.ApplySignal(ctx, f.ID, port.EvidenceSignal{
 		EntryID: f.ID,
-		Type:   port.SignalUserDeny,
-		Source: "test",
+		Type:    port.SignalUserDeny,
+		Source:  "test",
 	})
 	if err != nil {
 		t.Fatalf("ApplySignal: %v", err)
@@ -341,8 +341,8 @@ func TestSignalHistoryCap(t *testing.T) {
 	for i := 0; i < 30; i++ {
 		_, err := eng.ApplySignal(ctx, f.ID, port.EvidenceSignal{
 			EntryID: f.ID,
-			Type:   port.SignalUserConfirm,
-			Source: "test",
+			Type:    port.SignalUserConfirm,
+			Source:  "test",
 		})
 		if err != nil {
 			t.Fatalf("ApplySignal %d: %v", i, err)
@@ -385,13 +385,13 @@ func TestScoreDecay(t *testing.T) {
 
 	// Create a fact whose last signal was 30 days ago
 	f := &types.FactEntry{
-		Entity:       "master",
-		RelationType: "preference",
-		Content:      "old fact",
-		SourceTier:   types.SourceExplicit,
+		Entity:        "master",
+		RelationType:  "preference",
+		Content:       "old fact",
+		SourceTier:    types.SourceExplicit,
 		TemporalScope: types.ScopePattern,
-		Source:       "test",
-		MemCellType:  "fact",
+		Source:        "test",
+		MemCellType:   "fact",
 		Evidence: types.MemoryEvidenceEntry{
 			Reinforcement:    1.0,
 			ReinLastSignalAt: time.Now().Add(-30 * 24 * time.Hour).Unix(),

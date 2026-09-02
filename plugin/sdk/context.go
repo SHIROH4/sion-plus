@@ -60,9 +60,9 @@ type IntentSubmitter interface {
 
 // ProactiveIntent is a plugin-originated desire for the AI to speak/act.
 type ProactiveIntent struct {
-	Source      string  // "plugin:timer", "plugin:qq", etc.
-	Action      string  // action name from the action registry
-	Message     string  // instruction/prompt for the LLM
-	Priority    int     // 0-10
-	CoalesceKey string  // empty = never coalesce
+	Source      string // "plugin:timer", "plugin:qq", etc.
+	Action      string // action name from the action registry
+	Message     string // instruction/prompt for the LLM
+	Priority    int    // 0-10
+	CoalesceKey string // empty = never coalesce
 }

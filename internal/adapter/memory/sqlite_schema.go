@@ -228,8 +228,8 @@ func (s *SQLiteStore) migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_kind, entity_id)`,
 
-			// ── Data migrations ──
-			`UPDATE facts SET memcell_type = 'fact' WHERE memcell_type = '' OR memcell_type IS NULL`,
+		// ── Data migrations ──
+		`UPDATE facts SET memcell_type = 'fact' WHERE memcell_type = '' OR memcell_type IS NULL`,
 	}
 
 	for _, m := range migrations {

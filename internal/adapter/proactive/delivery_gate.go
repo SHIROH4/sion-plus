@@ -21,7 +21,7 @@ const (
 // deliveryGate implements port.DeliveryGate.
 // Controls when the AI can speak: min-gap between deliveries, inflight guard, phase CAS.
 type deliveryGate struct {
-	phase         atomic.Int32        // ProactivePhase
+	phase         atomic.Int32 // ProactivePhase
 	inflight      atomic.Bool
 	lastReleaseAt time.Time
 	mu            sync.Mutex

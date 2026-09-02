@@ -16,7 +16,7 @@ import (
 type CuriosityEngineImpl struct {
 	mu sync.Mutex
 
-	memoryStore port.MemoryStore
+	memoryStore  port.MemoryStore
 	memoryRecall port.MemoryRecall
 
 	gaps []cognition.KnowledgeGap

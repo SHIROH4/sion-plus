@@ -132,7 +132,7 @@ func TestCognitionTickBuildIntent(t *testing.T) {
 
 func TestCognitionTickBackoff(t *testing.T) {
 	tick := &CognitionTick{
-		interval:       60 * time.Second,
+		interval:             60 * time.Second,
 		lastProactiveSpeakAt: time.Now(),
 	}
 

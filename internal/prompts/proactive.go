@@ -3,10 +3,11 @@ package prompts
 // PromptProactiveDelivery generates a character-voiced response for a proactive intent.
 //
 // Placeholders:
-//   %s[1] = system identity prompt (already formatted)
-//   %s[2] = action instruction (what to say)
-//   %s[3] = memory context (retrieved facts and diaries)
-//   %s[4] = emotion context
+//
+//	%s[1] = system identity prompt (already formatted)
+//	%s[2] = action instruction (what to say)
+//	%s[3] = memory context (retrieved facts and diaries)
+//	%s[4] = emotion context
 const PromptProactiveDelivery = `%s
 
 ## 任务

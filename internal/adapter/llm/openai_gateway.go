@@ -52,9 +52,9 @@ func NewOpenAIGateway(cfg GatewayConfig) *OpenAIGateway {
 		client: &http.Client{
 			Timeout: cfg.Timeout,
 			Transport: &http.Transport{
-				MaxIdleConns:        10,
-				IdleConnTimeout:     90 * time.Second,
-				DisableCompression:  false,
+				MaxIdleConns:       10,
+				IdleConnTimeout:    90 * time.Second,
+				DisableCompression: false,
 			},
 		},
 	}
@@ -333,8 +333,8 @@ type openaiMessage struct {
 }
 
 type openaiContentPart struct {
-	Type     string         `json:"type"`
-	Text     string         `json:"text,omitempty"`
+	Type     string          `json:"type"`
+	Text     string          `json:"text,omitempty"`
 	ImageURL *openaiImageURL `json:"image_url,omitempty"`
 }
 
@@ -354,8 +354,8 @@ type openaiToolFunc struct {
 }
 
 type openaiToolCall struct {
-	ID       string            `json:"id"`
-	Type     string            `json:"type"`
+	ID       string             `json:"id"`
+	Type     string             `json:"type"`
 	Function openaiToolFuncCall `json:"function"`
 }
 

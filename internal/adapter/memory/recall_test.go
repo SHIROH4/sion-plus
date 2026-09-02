@@ -38,14 +38,14 @@ func TestHybridSearch(t *testing.T) {
 	}
 	for _, f := range facts {
 		fact := &types.FactEntry{
-			Entity:       f.entity,
-			RelationType: "preference",
-			Content:      f.content,
-			SourceTier:   types.SourceExplicit,
+			Entity:        f.entity,
+			RelationType:  "preference",
+			Content:       f.content,
+			SourceTier:    types.SourceExplicit,
 			TemporalScope: types.ScopePattern,
-			Importance:   5,
-			Source:       "chat",
-			MemCellType:  "prefer",
+			Importance:    5,
+			Source:        "chat",
+			MemCellType:   "prefer",
 			Evidence: types.MemoryEvidenceEntry{
 				Reinforcement:    1.0,
 				ReinLastSignalAt: time.Now().Unix(),
@@ -196,8 +196,8 @@ func TestExplorationQuota(t *testing.T) {
 			Content: commonWord + " hot", SourceTier: types.SourceExplicit,
 			TemporalScope: types.ScopePattern, Source: "test", MemCellType: "fact",
 			RecallCount: 10,
-			Evidence:   types.MemoryEvidenceEntry{Reinforcement: 2.0, ReinLastSignalAt: time.Now().Unix()},
-			CreatedAt:  time.Now().Unix(),
+			Evidence:    types.MemoryEvidenceEntry{Reinforcement: 2.0, ReinLastSignalAt: time.Now().Unix()},
+			CreatedAt:   time.Now().Unix(),
 		}
 		store.SaveFact(ctx, f)
 	}
@@ -207,8 +207,8 @@ func TestExplorationQuota(t *testing.T) {
 			Content: commonWord + " cold", SourceTier: types.SourceExplicit,
 			TemporalScope: types.ScopePattern, Source: "test", MemCellType: "fact",
 			RecallCount: 0,
-			Evidence:   types.MemoryEvidenceEntry{Reinforcement: 2.0, ReinLastSignalAt: time.Now().Unix()},
-			CreatedAt:  time.Now().Unix(),
+			Evidence:    types.MemoryEvidenceEntry{Reinforcement: 2.0, ReinLastSignalAt: time.Now().Unix()},
+			CreatedAt:   time.Now().Unix(),
 		}
 		store.SaveFact(ctx, f)
 	}
