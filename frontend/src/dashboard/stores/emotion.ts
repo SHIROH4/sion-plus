@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, readonly } from 'vue'
 import type { EmotionState, EmotionSnapshot } from '@/shared/types'
-import { subscribeToSSE } from '@/shared/api'
+import { API_ORIGIN, subscribeToSSE } from '@/shared/api'
 
-const API = 'http://127.0.0.1:8080'
+const API = API_ORIGIN
 
 export const useEmotionStore = defineStore('emotion', () => {
   const current = ref<EmotionState | null>(null)

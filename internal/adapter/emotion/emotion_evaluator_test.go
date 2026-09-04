@@ -126,3 +126,21 @@ func TestCountKeywords(t *testing.T) {
 		})
 	}
 }
+
+func TestNeedsLLMEmotionEvaluation(t *testing.T) {
+	tests := []struct {
+		text string
+		want bool
+	}{
+		{"请解释 Redis Lua 的原子性", false},
+		{"只回复 PERF_01_OK", false},
+		{"今天任务很多，我有点焦虑", true},
+		{"谢谢你陪我", true},
+		{"I feel lonely today", true},
+	}
+	for _, test := range tests {
+		if got := needsLLMEmotionEvaluation(test.text); got != test.want {
+			t.Errorf("needsLLMEmotionEvaluation(%q)=%v, want %v", test.text, got, test.want)
+		}
+	}
+}

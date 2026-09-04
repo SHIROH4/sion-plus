@@ -149,6 +149,53 @@ func TestBrokerHeartbeat(t *testing.T) {
 	}
 }
 
+func TestBrokerClearsServerWriteTimeout(t *testing.T) {
+	b := NewBroker()
+	b.HeartbeatInterval = 25 * time.Millisecond
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	b.Start(ctx)
+
+	ts := httptest.NewUnstartedServer(http.HandlerFunc(b.ServeHTTP))
+	ts.Config.WriteTimeout = 100 * time.Millisecond
+	ts.Start()
+	defer ts.Close()
+
+	requestCtx, requestCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer requestCancel()
+	req, err := http.NewRequestWithContext(requestCtx, http.MethodGet, ts.URL+"/api/events?topics=chat", nil)
+	if err != nil {
+		t.Fatalf("request: %v", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("connect: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Publish after the server-wide deadline would have expired. ServeHTTP must
+	// clear that deadline because an SSE stream is designed to remain open.
+	time.Sleep(250 * time.Millisecond)
+	b.Publish("chat", map[string]string{"message": "after-write-timeout"})
+
+	buf := make([]byte, 4096)
+	deadline := time.After(1500 * time.Millisecond)
+	for {
+		select {
+		case <-deadline:
+			t.Fatal("did not receive event after server WriteTimeout")
+		default:
+		}
+		n, readErr := resp.Body.Read(buf)
+		if n > 0 && strings.Contains(string(buf[:n]), "after-write-timeout") {
+			return
+		}
+		if readErr != nil {
+			t.Fatalf("stream closed after server WriteTimeout: %v", readErr)
+		}
+	}
+}
+
 func TestBrokerMultipleTopics(t *testing.T) {
 	b := NewBroker()
 	ctx, cancel := context.WithCancel(context.Background())

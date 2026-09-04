@@ -50,6 +50,84 @@ func ScoreActions(
 	return scored
 }
 
+// ApplyPreferenceBias adjusts scores from explicit user feedback only. The
+// neutral Beta(1,1) prior prevents a single click from moving the policy; the
+// clamp keeps learned preference below hard safety and context constraints.
+func ApplyPreferenceBias(scored []types.ScoredAction, stats []types.ActionFeedbackStats, minSamples int) []types.ScoredAction {
+	byAction := make(map[string]types.ActionFeedbackStats, len(stats))
+	for _, stat := range stats {
+		byAction[stat.Action] = stat
+	}
+	for i := range scored {
+		stat, ok := byAction[scored[i].Action.Name]
+		if !ok || stat.Samples < minSamples {
+			continue
+		}
+		bias := preferenceBias(stat)
+		if bias > 0.12 {
+			bias = 0.12
+		}
+		if bias < -0.12 {
+			bias = -0.12
+		}
+		scored[i].FinalScore += bias
+		scored[i].Modulators["explicit_preference"] = 1 + bias
+	}
+	sortScoredActions(scored)
+	return scored
+}
+
+// ApplyContextualPreferenceBias prefers feedback gathered in the current
+// context, while falling back to global explicit feedback when the context is
+// sparse. This is a conservative contextual policy, not an unconstrained
+// exploration policy: safety gates still run before delivery.
+func ApplyContextualPreferenceBias(scored []types.ScoredAction, local, global []types.ActionFeedbackStats, minSamples int) []types.ScoredAction {
+	localByAction := make(map[string]types.ActionFeedbackStats, len(local))
+	for _, stat := range local {
+		localByAction[stat.Action] = stat
+	}
+	globalByAction := make(map[string]types.ActionFeedbackStats, len(global))
+	for _, stat := range global {
+		globalByAction[stat.Action] = stat
+	}
+	for i := range scored {
+		stat, scope := localByAction[scored[i].Action.Name], "context"
+		if stat.Samples < minSamples {
+			stat, scope = globalByAction[scored[i].Action.Name], "global"
+		}
+		if stat.Samples < minSamples {
+			continue
+		}
+		bias := preferenceBias(stat)
+		if bias > 0.12 {
+			bias = 0.12
+		}
+		if bias < -0.12 {
+			bias = -0.12
+		}
+		scored[i].FinalScore += bias
+		scored[i].Modulators["explicit_preference_"+scope] = 1 + bias
+	}
+	sortScoredActions(scored)
+	return scored
+}
+
+// preferenceBias maps each reward from [-1,1] to [0,1], then applies a
+// Beta(1,1) prior. This keeps the posterior in probability space and shrinks
+// small samples toward neutral before converting it to a bounded score delta.
+func preferenceBias(stat types.ActionFeedbackStats) float64 {
+	positiveMass := (stat.RewardSum + float64(stat.Samples)) / 2
+	posteriorMean := (positiveMass + 1) / float64(stat.Samples+2)
+	bias := (posteriorMean - 0.5) * 0.30
+	if bias > 0.12 {
+		return 0.12
+	}
+	if bias < -0.12 {
+		return -0.12
+	}
+	return bias
+}
+
 // computeModulators returns a map of modulator_name → multiplier.
 func computeModulators(action types.ActionDef, f *types.QuantifiedFeatures) map[string]float64 {
 	m := make(map[string]float64)

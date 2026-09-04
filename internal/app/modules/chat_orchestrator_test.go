@@ -9,6 +9,7 @@ import (
 
 	"github.com/SHIROH4/sion-plus/internal/adapter/emotion"
 	"github.com/SHIROH4/sion-plus/internal/adapter/memory"
+	"github.com/SHIROH4/sion-plus/internal/adapter/tool"
 	domainMemory "github.com/SHIROH4/sion-plus/internal/domain/memory"
 	"github.com/SHIROH4/sion-plus/internal/domain/types"
 	"github.com/SHIROH4/sion-plus/internal/port"
@@ -18,9 +19,12 @@ import (
 type mockLLM struct {
 	responses    map[string]string
 	streamChunks []string // if set, ChatStream sends these chunks
+	chatCalls    int
+	toolCalls    int
 }
 
 func (m *mockLLM) Chat(ctx context.Context, sp string, msgs []port.LLMMessage) (string, error) {
+	m.chatCalls++
 	last := ""
 	if len(msgs) > 0 {
 		last = msgs[len(msgs)-1].Content
@@ -37,7 +41,8 @@ func (m *mockLLM) Chat(ctx context.Context, sp string, msgs []port.LLMMessage) (
 }
 
 func (m *mockLLM) ChatWithTools(ctx context.Context, sp string, msgs []port.LLMMessage, tools []port.ToolDef, onToolCall func(string, string) string, maxRounds int, tc string) (string, error) {
-	return "", nil
+	m.toolCalls++
+	return "tool-aware response", nil
 }
 
 func (m *mockLLM) ChatStream(ctx context.Context, sp string, msgs []port.LLMMessage, onChunk func(string) error) error {
@@ -115,7 +120,7 @@ func TestChatOrchestratorFullPipeline(t *testing.T) {
 	if result.Emotion.Primary == "" {
 		t.Error("expected non-empty emotion primary")
 	}
-	if result.EmotionSource != "llm" && result.EmotionSource != "rule" {
+	if result.EmotionSource != "llm" && result.EmotionSource != "rule" && result.EmotionSource != "rule_gate" {
 		t.Errorf("emotion source for first turn: got %s", result.EmotionSource)
 	}
 	t.Logf("turn 1: response=%q emotion=%s/%s", result.Response, result.Emotion.Primary, result.EmotionSource)
@@ -130,6 +135,32 @@ func TestChatOrchestratorFullPipeline(t *testing.T) {
 	// Verify L0 buffer has messages
 	if orch.buffer.Len() < 4 {
 		t.Errorf("L0 buffer should have at least 4 messages, got %d", orch.buffer.Len())
+	}
+}
+
+func TestChatWithToolsUsesSingleModelCall(t *testing.T) {
+	executor := &mockLLM{responses: map[string]string{}}
+	registry := tool.NewToolRegistry()
+	registry.Register(&tool.ToolDef{
+		Name:        "test_tool",
+		Description: "test",
+		Parameters:  map[string]any{"type": "object"},
+		Handler: func(context.Context, map[string]any) (string, error) {
+			return "ok", nil
+		},
+	})
+	orchestrator := &ChatOrchestrator{executor: executor, toolRegistry: registry}
+	turn := &turnContext{enrichedMsg: "普通聊天", promptResult: BuildResult{SystemPrompt: "system"}}
+
+	response, err := orchestrator.chatWithTools(context.Background(), turn)
+	if err != nil {
+		t.Fatalf("chatWithTools: %v", err)
+	}
+	if response != "tool-aware response" {
+		t.Fatalf("response=%q", response)
+	}
+	if executor.toolCalls != 1 || executor.chatCalls != 0 {
+		t.Fatalf("tool_calls=%d chat_calls=%d, want 1 and 0", executor.toolCalls, executor.chatCalls)
 	}
 }
 
@@ -155,7 +186,7 @@ func TestChatOrchestratorEmotionFlow(t *testing.T) {
 		initialState.Valence, afterState.Valence, result.Emotion.Primary, result.EmotionSource)
 
 	// Second turn should be LLM-evaluated
-	if result.EmotionSource != "llm" && result.EmotionSource != "rule" {
+	if result.EmotionSource != "llm" && result.EmotionSource != "rule" && result.EmotionSource != "rule_gate" {
 		t.Errorf("expected emotion source=llm for second turn, got %s", result.EmotionSource)
 	}
 }

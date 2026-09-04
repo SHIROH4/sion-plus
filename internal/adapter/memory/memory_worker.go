@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,17 +35,20 @@ type MemoryWorker struct {
 	detectSignalsFn   func(ctx context.Context, newFacts, existingFacts []types.FactEntry) ([]SignalResult, error)
 	reflectAndDiaryFn func(ctx context.Context, facts []types.FactEntry, msgs []types.Message) (*ReflectAndDiaryResult, error)
 	identityBuilder   *IdentityBuilder
+	embedding         port.EmbeddingService
+	embeddingModelID  string
 
 	// State
-	mu                   sync.Mutex
-	running              bool
-	processing           bool // CAS flag: true when a worker is processing a wake signal
-	turnsSinceExtraction int
-	lastExtractionAt     time.Time
-	lastReflectionAt     time.Time
-	lastArchiveSweep     time.Time
-	stopCh               chan struct{}
-	wg                   sync.WaitGroup
+	mu                     sync.Mutex
+	running                bool
+	processing             bool // CAS flag: true when a worker is processing a wake signal
+	turnsSinceExtraction   int
+	lastExtractionAt       time.Time
+	lastReflectionAt       time.Time
+	lastArchiveSweep       time.Time
+	lastProcessedMessageID int64
+	stopCh                 chan struct{}
+	wg                     sync.WaitGroup
 
 	// Emotional spike → force diary on next wake
 	forceDiaryOnNextWake bool
@@ -59,6 +63,8 @@ type MemoryWorker struct {
 	lastValence float64 // previous evaluation valence, for change detection
 	lastArousal float64 // previous arousal, for importance modulation
 }
+
+const factExtractionCheckpoint = "fact_extraction_message_id"
 
 // SignalResult is the output of SignalDetection LLM.
 type SignalResult struct {
@@ -132,6 +138,13 @@ func (w *MemoryWorker) SetDetectSignalsHook(fn func(ctx context.Context, newFact
 
 func (w *MemoryWorker) SetIdentityBuilder(b *IdentityBuilder) { w.identityBuilder = b }
 
+// SetEmbeddingService enables vector-assisted fact matching. Lexical and
+// conflict guards remain active when the service is unavailable.
+func (w *MemoryWorker) SetEmbeddingService(embedding port.EmbeddingService, modelID string) {
+	w.embedding = embedding
+	w.embeddingModelID = modelID
+}
+
 func (w *MemoryWorker) SetReflectAndDiaryHook(fn func(ctx context.Context, facts []types.FactEntry, msgs []types.Message) (*ReflectAndDiaryResult, error)) {
 	w.reflectAndDiaryFn = fn
 }
@@ -181,6 +194,21 @@ func (w *MemoryWorker) currentArousalBoost() int {
 
 // Start launches the background goroutine pool.
 func (w *MemoryWorker) Start(ctx context.Context, cfg MemoryWorkerConfig) {
+	checkpoint, exists, err := w.store.MemoryWorkerCheckpoint(ctx, factExtractionCheckpoint)
+	if err != nil {
+		log.Printf("[MemoryWorker] load extraction checkpoint: %v", err)
+	} else if !exists {
+		// Existing history predates this cursor and has already been eligible for
+		// extraction. Start at the current tail instead of replaying it on upgrade.
+		checkpoint, err = w.store.MaxMessageID(ctx)
+		if err != nil {
+			log.Printf("[MemoryWorker] load history tail: %v", err)
+			checkpoint = 0
+		} else if err := w.store.SaveMemoryWorkerCheckpoint(ctx, factExtractionCheckpoint, checkpoint); err != nil {
+			log.Printf("[MemoryWorker] initialize extraction checkpoint: %v", err)
+		}
+	}
+
 	w.mu.Lock()
 	if w.running {
 		w.mu.Unlock()
@@ -189,6 +217,7 @@ func (w *MemoryWorker) Start(ctx context.Context, cfg MemoryWorkerConfig) {
 	w.running = true
 	w.extractEveryN = cfg.ExtractEveryN
 	w.turnsSinceExtraction = cfg.ExtractEveryN - 1 // trigger on first turn
+	w.lastProcessedMessageID = checkpoint
 	w.mu.Unlock()
 
 	for i := 0; i < cfg.PoolSize; i++ {
@@ -199,8 +228,60 @@ func (w *MemoryWorker) Start(ctx context.Context, cfg MemoryWorkerConfig) {
 	// Maintenance and archive tickers
 	w.wg.Add(1)
 	go w.maintenanceLoop(ctx, cfg)
+	if w.embedding != nil {
+		w.wg.Add(1)
+		go w.backfillFactEmbeddings(ctx)
+	}
 
 	log.Printf("[MemoryWorker] started with pool_size=%d", cfg.PoolSize)
+}
+
+func (w *MemoryWorker) backfillFactEmbeddings(ctx context.Context) {
+	defer w.wg.Done()
+	if !w.embedding.IsAvailable() {
+		log.Printf("[MemoryWorker] embedding backfill skipped: service unavailable")
+		return
+	}
+	facts, err := w.store.ListActiveFacts(ctx, 0)
+	if err != nil {
+		log.Printf("[MemoryWorker] embedding backfill load facts: %v", err)
+		return
+	}
+	pending := make([]types.FactEntry, 0, len(facts))
+	texts := make([]string, 0, len(facts))
+	for _, fact := range facts {
+		if len(fact.Vector) > 0 && fact.EmbeddingModelID == w.embeddingModelID {
+			continue
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-w.stopCh:
+			return
+		default:
+		}
+		pending = append(pending, fact)
+		texts = append(texts, fact.Content)
+	}
+	if len(pending) == 0 {
+		log.Printf("[MemoryWorker] embedding backfill complete: updated=0 total=%d model=%s", len(facts), w.embeddingModelID)
+		return
+	}
+	vectors, err := w.embedding.BatchVectorize(ctx, texts)
+	if err != nil || len(vectors) != len(pending) {
+		log.Printf("[MemoryWorker] embedding backfill vectorize: expected=%d actual=%d err=%v", len(pending), len(vectors), err)
+		return
+	}
+	updated := 0
+	for i, fact := range pending {
+		vector := vectors[i]
+		if err := w.store.UpdateFactEmbedding(ctx, fact.ID, vector, factContentSHA256(fact.Content), w.embeddingModelID); err != nil {
+			log.Printf("[MemoryWorker] embedding backfill persist fact=%d: %v", fact.ID, err)
+			return
+		}
+		updated++
+	}
+	log.Printf("[MemoryWorker] embedding backfill complete: updated=%d total=%d model=%s", updated, len(facts), w.embeddingModelID)
 }
 
 // Stop gracefully shuts down all goroutines.
@@ -318,14 +399,33 @@ func (w *MemoryWorker) runFactExtraction(ctx context.Context) []types.FactEntry 
 		return nil
 	}
 
-	msgs, err := w.store.LoadHistory(ctx, 50)
+	w.mu.Lock()
+	checkpoint := w.lastProcessedMessageID
+	w.mu.Unlock()
+
+	msgs, err := w.store.LoadHistoryAfter(ctx, checkpoint, 50)
 	if err != nil || len(msgs) == 0 {
 		return nil
 	}
-	log.Printf("[MemoryWorker] extracting from %d messages...", len(msgs))
+	lastMessageID := msgs[len(msgs)-1].ID
 
-	typedMsgs := make([]types.Message, len(msgs))
-	for i, m := range msgs {
+	durableMsgs := make([]types.Message, 0, len(msgs))
+	sourceMessageIDs := make([]int64, 0, len(msgs))
+	for _, msg := range msgs {
+		if msg.Metadata.MemoryPolicy == "ephemeral" {
+			continue
+		}
+		durableMsgs = append(durableMsgs, msg)
+		sourceMessageIDs = append(sourceMessageIDs, msg.ID)
+	}
+	if len(durableMsgs) == 0 {
+		w.advanceFactExtractionCheckpoint(ctx, lastMessageID)
+		return nil
+	}
+	log.Printf("[MemoryWorker] extracting from %d new messages (%d ephemeral skipped)...", len(durableMsgs), len(msgs)-len(durableMsgs))
+
+	typedMsgs := make([]types.Message, len(durableMsgs))
+	for i, m := range durableMsgs {
 		typedMsgs[i] = types.Message{Role: m.Role, Content: m.Content, CreatedAt: m.CreatedAt}
 	}
 
@@ -335,20 +435,65 @@ func (w *MemoryWorker) runFactExtraction(ctx context.Context) []types.FactEntry 
 		return nil
 	}
 
-	// Persist extracted facts
+	existing, err := w.store.ListActiveFacts(ctx, 0)
+	if err != nil {
+		log.Printf("[MemoryWorker] load existing facts for dedup: %v", err)
+		return nil
+	}
+	// Persist only facts not already represented by a high-confidence equivalent
+	// in the same entity/relation bucket. Every merge is audited and inherits the
+	// incoming source-message links.
 	arousalBoost := w.currentArousalBoost()
+	newFacts := make([]types.FactEntry, 0, len(facts))
 	for i := range facts {
 		facts[i].SignalProcessed = false
 		facts[i].Source = "chat"
 		if arousalBoost > 0 && facts[i].Importance+arousalBoost <= 10 {
 			facts[i].Importance += arousalBoost
 		}
+		match := findEquivalentFact(facts[i], existing)
+		if match == nil {
+			match = w.findEquivalentFactByEmbedding(ctx, &facts[i], existing)
+		}
+		if match != nil {
+			if err := w.store.MergeFactCandidate(ctx, match.fact.ID, &facts[i], sourceMessageIDs, match.reason, match.similarity); err != nil {
+				log.Printf("[MemoryWorker] merge equivalent fact: %v", err)
+				return newFacts
+			}
+			log.Printf("[MemoryWorker] merged equivalent fact into id=%d (%s similarity=%.3f)", match.fact.ID, match.reason, match.similarity)
+			continue
+		}
 		if err := w.store.SaveFact(ctx, &facts[i]); err != nil {
 			log.Printf("[MemoryWorker] SaveFact failed: %v", err)
+			return newFacts
 		}
+		if err := w.store.LinkFactSources(ctx, facts[i].ID, sourceMessageIDs); err != nil {
+			log.Printf("[MemoryWorker] LinkFactSources failed: %v", err)
+			return newFacts
+		}
+		existing = append(existing, facts[i])
+		newFacts = append(newFacts, facts[i])
 	}
+	w.advanceFactExtractionCheckpoint(ctx, lastMessageID)
 
-	return facts
+	return newFacts
+}
+
+func (w *MemoryWorker) advanceFactExtractionCheckpoint(ctx context.Context, messageID int64) {
+	if err := w.store.SaveMemoryWorkerCheckpoint(ctx, factExtractionCheckpoint, messageID); err != nil {
+		log.Printf("[MemoryWorker] persist extraction checkpoint: %v", err)
+		return
+	}
+	w.mu.Lock()
+	w.lastProcessedMessageID = messageID
+	w.mu.Unlock()
+}
+
+func normalizedFactKey(fact types.FactEntry) string {
+	normalize := func(s string) string {
+		return strings.ToLower(strings.Join(strings.Fields(strings.TrimSpace(s)), " "))
+	}
+	return normalize(fact.Entity) + "\x1f" + normalize(fact.RelationType) + "\x1f" + normalize(fact.Content)
 }
 
 func (w *MemoryWorker) runSignalDetection(ctx context.Context, newFacts []types.FactEntry) {
@@ -620,15 +765,20 @@ func (w *MemoryWorker) mergeReflectionIntoPersona(ctx context.Context, r *types.
 // Appends messages to L0, saves to history, and wakes the worker.
 func (w *MemoryWorker) OnAfterChat(ctx context.Context, userMsg, assistantMsg string) {
 	now := time.Now().Unix()
+	policy := "durable"
+	if explicitlyEphemeral(userMsg) {
+		policy = "ephemeral"
+	}
+	meta := types.MessageMeta{MemoryPolicy: policy}
 
 	// L0
-	w.buffer.Append(types.Message{Role: types.RoleUser, Content: userMsg, CreatedAt: now})
-	w.buffer.Append(types.Message{Role: types.RoleAssistant, Content: assistantMsg, CreatedAt: now})
+	w.buffer.Append(types.Message{Role: types.RoleUser, Content: userMsg, Metadata: meta, CreatedAt: now})
+	w.buffer.Append(types.Message{Role: types.RoleAssistant, Content: assistantMsg, Metadata: meta, CreatedAt: now})
 
 	// Persistent history
 	_ = w.store.SaveHistory(ctx, []types.Message{
-		{Role: types.RoleUser, Content: userMsg, CreatedAt: now},
-		{Role: types.RoleAssistant, Content: assistantMsg, CreatedAt: now},
+		{Role: types.RoleUser, Content: userMsg, Metadata: meta, CreatedAt: now},
+		{Role: types.RoleAssistant, Content: assistantMsg, Metadata: meta, CreatedAt: now},
 	})
 
 	// Wake worker
@@ -641,6 +791,21 @@ func (w *MemoryWorker) OnAfterChat(ctx context.Context, userMsg, assistantMsg st
 	if turns >= everyN {
 		w.Wake()
 	}
+}
+
+func explicitlyEphemeral(userMsg string) bool {
+	text := strings.ToLower(userMsg)
+	markers := []string{
+		"不要写入长期记忆", "不要记入长期记忆", "不要长期记忆", "不要记忆",
+		"不保存到长期记忆", "仅用于本轮", "虚构测试数据",
+		"do not remember", "don't remember", "do not store", "ephemeral",
+	}
+	for _, marker := range markers {
+		if strings.Contains(text, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────

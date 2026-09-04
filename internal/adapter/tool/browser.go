@@ -276,6 +276,7 @@ func extractPageState(ctx context.Context) (elems []pageElement, url, title stri
 // ── LLM Decision ───────────────────────────────────────────────────
 
 func (b *BrowserAgent) askLLM(ctx context.Context, prompt string) (*browserAction, error) {
+	ctx = port.WithLLMCallMetadata(ctx, "search", "tool_browser")
 	resp, err := b.executor.Chat(ctx, "", []port.LLMMessage{
 		{Role: "user", Content: prompt},
 	})

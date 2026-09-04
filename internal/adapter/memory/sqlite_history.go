@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -32,16 +33,19 @@ func (s *SQLiteStore) SaveHistory(ctx context.Context, msgs []types.Message) err
 	}
 	defer stmt.Close()
 
-	for _, msg := range msgs {
+	for i, msg := range msgs {
 		ts := msg.CreatedAt
 		if ts == 0 {
 			ts = now
 		}
 		imagesJSON, _ := json.Marshal(msg.Images)
 		metaJSON, _ := json.Marshal(msg.Metadata)
-		if _, err := stmt.ExecContext(ctx, msg.Role, msg.Content, string(imagesJSON), string(metaJSON), ts); err != nil {
+		res, err := stmt.ExecContext(ctx, msg.Role, msg.Content, string(imagesJSON), string(metaJSON), ts)
+		if err != nil {
 			return fmt.Errorf("SaveHistory: %w", err)
 		}
+		msg.ID, _ = res.LastInsertId()
+		msgs[i] = msg
 	}
 	return tx.Commit()
 }
@@ -65,8 +69,7 @@ func (s *SQLiteStore) LoadHistory(ctx context.Context, limit int) ([]types.Messa
 	for rows.Next() {
 		var m types.Message
 		var imagesJSON, metaJSON string
-		var id int64
-		if err := rows.Scan(&id, &m.Role, &m.Content, &imagesJSON, &metaJSON, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.Role, &m.Content, &imagesJSON, &metaJSON, &m.CreatedAt); err != nil {
 			return nil, err
 		}
 		json.Unmarshal([]byte(imagesJSON), &m.Images)
@@ -78,6 +81,87 @@ func (s *SQLiteStore) LoadHistory(ctx context.Context, limit int) ([]types.Messa
 		msgs[i], msgs[j] = msgs[j], msgs[i]
 	}
 	return msgs, rows.Err()
+}
+
+// LoadHistoryAfter returns messages newer than the persisted extraction cursor.
+// Results are chronological so an extraction batch preserves conversation order.
+func (s *SQLiteStore) LoadHistoryAfter(ctx context.Context, afterID int64, limit int) ([]types.Message, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if limit <= 0 {
+		limit = 50
+	}
+	rows, err := s.db.QueryContext(ctx,
+		`SELECT id, role, content, images, meta_json, created_at
+		 FROM messages WHERE id > ? ORDER BY id ASC LIMIT ?`, afterID, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var msgs []types.Message
+	for rows.Next() {
+		var m types.Message
+		var imagesJSON, metaJSON string
+		if err := rows.Scan(&m.ID, &m.Role, &m.Content, &imagesJSON, &metaJSON, &m.CreatedAt); err != nil {
+			return nil, err
+		}
+		_ = json.Unmarshal([]byte(imagesJSON), &m.Images)
+		_ = json.Unmarshal([]byte(metaJSON), &m.Metadata)
+		msgs = append(msgs, m)
+	}
+	return msgs, rows.Err()
+}
+
+func (s *SQLiteStore) MaxMessageID(ctx context.Context) (int64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var id int64
+	err := s.db.QueryRowContext(ctx, `SELECT COALESCE(MAX(id), 0) FROM messages`).Scan(&id)
+	return id, err
+}
+
+func (s *SQLiteStore) MemoryWorkerCheckpoint(ctx context.Context, key string) (int64, bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var value int64
+	err := s.db.QueryRowContext(ctx, `SELECT value_int FROM memory_worker_state WHERE key=?`, key).Scan(&value)
+	if err == sql.ErrNoRows {
+		return 0, false, nil
+	}
+	return value, err == nil, err
+}
+
+func (s *SQLiteStore) SaveMemoryWorkerCheckpoint(ctx context.Context, key string, value int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	_, err := s.db.ExecContext(ctx,
+		`INSERT INTO memory_worker_state(key, value_int, updated_at) VALUES(?,?,?)
+		 ON CONFLICT(key) DO UPDATE SET value_int=excluded.value_int, updated_at=excluded.updated_at`,
+		key, value, time.Now().Unix())
+	return err
+}
+
+func (s *SQLiteStore) LinkFactSources(ctx context.Context, factID int64, messageIDs []int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, messageID := range messageIDs {
+		if messageID == 0 {
+			continue
+		}
+		if _, err := tx.ExecContext(ctx,
+			`INSERT OR IGNORE INTO fact_sources(fact_id, message_id, created_at) VALUES(?,?,?)`,
+			factID, messageID, time.Now().Unix()); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // SearchMessagesByTimeRange returns messages within [start, end] (v2.0).

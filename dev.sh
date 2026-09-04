@@ -7,7 +7,7 @@ cd "$(dirname "$0")"
 ./stop.sh 2>/dev/null
 
 echo "==> Starting Go backend (port 8080)..."
-go run ./cmd/sion server &
+go run ./cmd/sion &
 GO_PID=$!
 
 echo "==> Starting Vite + Electron..."

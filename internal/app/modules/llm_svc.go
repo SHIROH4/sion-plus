@@ -19,6 +19,57 @@ type LLMService struct {
 	routes    port.LLMRoutes
 }
 
+// routedExecutor resolves the configured provider immediately before each
+// request. Keeping this indirection is important because the dashboard can
+// reload provider credentials while chat, emotion and proactive modules are
+// already holding a reference to LLMService.Executor.
+type routedExecutor struct {
+	registry port.LLMProviderRegistry
+	tracker  *llm.TokenTracker
+	taskType string
+	label    string
+}
+
+var _ port.LLMExecutor = (*routedExecutor)(nil)
+
+func (e *routedExecutor) resolve(ctx context.Context) (port.LLMExecutor, error) {
+	route := port.LLMRouteFromContext(ctx, e.taskType)
+	exec, _, err := e.registry.GetExecutor(route)
+	if err != nil {
+		return nil, err
+	}
+	return llm.WrapExecutor(exec, e.tracker, e.label), nil
+}
+
+func (e *routedExecutor) Chat(ctx context.Context, systemPrompt string, msgs []port.LLMMessage) (string, error) {
+	exec, err := e.resolve(ctx)
+	if err != nil {
+		return "", err
+	}
+	return exec.Chat(ctx, systemPrompt, msgs)
+}
+
+func (e *routedExecutor) ChatWithTools(ctx context.Context, systemPrompt string, msgs []port.LLMMessage, tools []port.ToolDef, onToolCall func(string, string) string, maxRounds int, toolChoice string) (string, error) {
+	exec, err := e.resolve(ctx)
+	if err != nil {
+		return "", err
+	}
+	return exec.ChatWithTools(ctx, systemPrompt, msgs, tools, onToolCall, maxRounds, toolChoice)
+}
+
+func (e *routedExecutor) ChatStream(ctx context.Context, systemPrompt string, msgs []port.LLMMessage, onChunk func(string) error) error {
+	exec, err := e.resolve(ctx)
+	if err != nil {
+		return err
+	}
+	return exec.ChatStream(ctx, systemPrompt, msgs, onChunk)
+}
+
+func (e *routedExecutor) IsAvailable(ctx context.Context) bool {
+	exec, err := e.resolve(ctx)
+	return err == nil && exec.IsAvailable(ctx)
+}
+
 // NewLLMService creates an LLM service with provider registry and token tracking.
 func NewLLMService(providers []port.LLMProviderConfig, routes port.LLMRoutes, dataDir string) *LLMService {
 	tracker := llm.NewTokenTracker(dataDir)
@@ -41,12 +92,15 @@ func (s *LLMService) Init(ctx context.Context) error {
 	// Start token tracker
 	s.Tokenizer.Start(ctx)
 
-	// Create tracked executor for "chat" route (primary)
-	exec, name, err := s.Registry.GetExecutor("chat")
+	_, name, err := s.Registry.GetExecutor("chat")
 	if err != nil {
-		log.Printf("[LLMService] no chat executor: %v (using raw gateway)", err)
+		log.Printf("[LLMService] no chat executor: %v", err)
 	} else {
-		s.Executor = llm.WrapExecutor(exec, s.Tokenizer, "chat")
+		// Keep a stable executor reference for modules, but resolve its concrete
+		// provider per call so ReloadConfig updates credentials without a restart.
+		// When no provider is configured, retain an explicitly injected executor
+		// for tests and embedding hosts.
+		s.Executor = &routedExecutor{registry: s.Registry, tracker: s.Tokenizer, taskType: "chat", label: "chat"}
 		log.Printf("[LLMService] primary executor: %s", name)
 	}
 

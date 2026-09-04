@@ -1,15 +1,21 @@
-.PHONY: build run test lint clean wire vet
+.PHONY: build build-server build-frontend run run-pet test lint clean wire vet
 
 # ── 构建 ──
-build:
+build: build-frontend build-server
+
+build-server:
+	mkdir -p bin
 	go build -o bin/sion ./cmd/sion
+
+build-frontend:
+	pnpm --dir frontend build
 
 # ── 运行 ──
 run:
-	go run ./cmd/sion settings
+	go run ./cmd/sion
 
 run-pet:
-	go run ./cmd/sion pet
+	./dev.sh
 
 # ── 测试 ──
 test:
@@ -38,7 +44,7 @@ clean:
 
 # ── 开发 ──
 dev:
-	go run ./cmd/sion settings
+	./dev.sh
 
 # ── 工具安装 ──
 tools:

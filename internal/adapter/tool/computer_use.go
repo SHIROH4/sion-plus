@@ -280,6 +280,7 @@ func (a *ComputerUseAgent) Run(ctx context.Context, task string) *CUAResult {
 		// 5. Call VLM
 		t1 := time.Now()
 		vlmCtx, vlmCancel := context.WithTimeout(ctx, a.cfg.StepTimeout)
+		vlmCtx = port.WithLLMCallMetadata(vlmCtx, "vision", "computer_use")
 		resp, err := a.executor.Chat(vlmCtx, "", []port.LLMMessage{msg})
 		vlmCancel()
 		llmMs := time.Since(t1).Milliseconds()

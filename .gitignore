@@ -1,5 +1,5 @@
 # Compiled binary
-sion
+/sion
 *.exe
 
 # Binaries
@@ -37,3 +37,4 @@ token_usage/
 vendor/
 node_modules/
 frontend/node_modules/
+frontend/dist/

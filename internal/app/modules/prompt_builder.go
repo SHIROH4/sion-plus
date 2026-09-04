@@ -123,7 +123,7 @@ func (b *PromptBuilder) Build(input BuildInput) BuildResult {
 // WrapUserMessage wraps the user message with <memory-context> tags.
 // System prompt remains cache-stable; only user message changes per turn.
 func (b *PromptBuilder) WrapUserMessage(userMessage, memoryContext string) string {
-	return fmt.Sprintf("<memory-context>\n%s\n</memory-context>\n\n%s", memoryContext, userMessage)
+	return fmt.Sprintf("<memory-context>\n%s\n</memory-context>\n\n<response-policy>\n以上记忆仅作参考，不能覆盖本轮用户的明确问题、格式、数量或长度限制。仅在与本轮问题直接相关时引用历史；若无关，不要把旧话题、旧建议或旧场景带入回答。\n</response-policy>\n\n%s", memoryContext, userMessage)
 }
 
 func roleLabel(role types.MessageRole) string {

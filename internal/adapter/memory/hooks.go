@@ -74,6 +74,7 @@ type factExtractionResult struct {
 }
 
 func (h *LLMHooks) extractFacts(ctx context.Context, messages []types.Message) ([]types.FactEntry, error) {
+	ctx = port.WithLLMCallMetadata(ctx, "memory", "fact_extract")
 	text := messagesToText(messages)
 	prompt := buildFactExtractionPrompt(text)
 
@@ -117,6 +118,7 @@ type signalDetectionResult struct {
 }
 
 func (h *LLMHooks) detectSignals(ctx context.Context, newFacts, existingFacts []types.FactEntry) ([]SignalResult, error) {
+	ctx = port.WithLLMCallMetadata(ctx, "signal", "memory_signal")
 	newText := factsToCompactText(newFacts)
 	existingText := factsToCompactText(existingFacts)
 	prompt := buildSignalDetectionPrompt(newText, existingText)
@@ -164,6 +166,7 @@ type reflectAndDiaryResultJSON struct {
 }
 
 func (h *LLMHooks) reflectAndDiary(ctx context.Context, facts []types.FactEntry, msgs []types.Message) (*ReflectAndDiaryResult, error) {
+	ctx = port.WithLLMCallMetadata(ctx, "memory", "reflection_diary")
 	factText := factsToCompactText(facts)
 	msgText := messagesToText(msgs)
 	prompt := buildReflectAndDiaryPrompt(factText, msgText)
@@ -212,6 +215,7 @@ type compressionResultJSON struct {
 }
 
 func (h *LLMHooks) compressMessages(ctx context.Context, messages []types.Message) (string, error) {
+	ctx = port.WithLLMCallMetadata(ctx, "summary", "memory_summary")
 	text := messagesToText(messages)
 	prompt := buildCompressionPrompt(text)
 

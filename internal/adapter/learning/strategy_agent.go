@@ -114,6 +114,7 @@ func (s *StrategyAgentImpl) Run(ctx context.Context) (*types.DailyReflectionOutp
 	prompt := s.buildPrompt(input, interactionCount, outcomeCount, maxIntensity)
 
 	// Call LLM
+	ctx = port.WithLLMCallMetadata(ctx, "memory", "strategy_reflection")
 	response, err := s.executor.Chat(ctx, prompt, nil)
 	if err != nil {
 		return nil, fmt.Errorf("strategy agent LLM: %w", err)

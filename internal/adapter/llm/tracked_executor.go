@@ -69,7 +69,7 @@ func (t *TrackedExecutor) record(ctx context.Context, promptChars, completionCha
 	if promptTokens < 1 {
 		promptTokens = 1
 	}
-	t.tracker.Record(ctx, t.label, promptTokens, completionTokens)
+	t.tracker.Record(ctx, port.LLMCallTypeFromContext(ctx, t.label), promptTokens, completionTokens)
 }
 
 // promptCharCount sums the character count of system prompt + all messages.

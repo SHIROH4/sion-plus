@@ -104,13 +104,31 @@ func (e *FeatureExtractor) Extract(ctx context.Context) *types.QuantifiedFeature
 	f.E3_CooldownNorm = 0.8  // default: mostly available
 	f.E4_QuotaRemaining = 10 // default: plenty of quota
 
-	// ── R组: Relationship (Memory outcomes) ──
-	f.R1_OverallAcceptRate = 0.7
-	f.R1_SampleCount = 10
+	// ── R组: Relationship (explicit proactive feedback) ──
+	// No feedback means unknown, not positive. Use neutral priors until enough
+	// explicit labels are collected; silence and unrelated chat are excluded.
+	f.R1_OverallAcceptRate = 0.5
+	f.R1_SampleCount = 0
 	f.R4_RecentRejections = 0
-	f.R3_SourceAcceptRate = map[string]float64{"proactive": 1.0}
-	f.U8_EngagementNorm = 0.8  // positive default (user seems engaged)
-	f.U10_TimeWindowPref = 0.8 // positive default (good time to talk)
+	f.R3_SourceAcceptRate = map[string]float64{"proactive": 0.5}
+	f.U8_EngagementNorm = 0.5
+	f.U10_TimeWindowPref = 0.5
+	if feedbackStore, ok := e.memoryStore.(port.ProactiveFeedbackStore); ok {
+		if stats, err := feedbackStore.ActionFeedbackStats(ctx); err == nil {
+			samples, rewardSum := 0, 0.0
+			for _, stat := range stats {
+				samples += stat.Samples
+				rewardSum += stat.RewardSum
+			}
+			if samples > 0 {
+				// Map mean reward [-1,1] to a conservative acceptance proxy [0,1].
+				rate := (rewardSum/float64(samples) + 1) / 2
+				f.R1_OverallAcceptRate = rate
+				f.R1_SampleCount = float64(samples)
+				f.R3_SourceAcceptRate["proactive"] = rate
+			}
+		}
+	}
 
 	// ── Persona-derived features ──
 	if e.persona != nil {

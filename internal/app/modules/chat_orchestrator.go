@@ -34,7 +34,7 @@ type ChatOrchestrator struct {
 	screenObserver port.ScreenObserver
 	toolRegistry   port.ChatToolProvider
 	postChatHook   func(userMsg, response string)
-	preChatHook    func() // called when user sends a message, before processing
+	preChatHook    func(context.Context, string) // called when user sends a message, before processing
 
 	recentReqs [5]recentRequest // ring buffer for task dedup
 	reqIdx     int
@@ -51,13 +51,26 @@ func (c *ChatOrchestrator) SetPostChatHook(hook func(userMsg, response string)) 
 
 // SetPreChatHook sets a callback invoked when the user sends a message,
 // before emotion evaluation and LLM processing.
-func (c *ChatOrchestrator) SetPreChatHook(hook func()) { c.preChatHook = hook }
+func (c *ChatOrchestrator) SetPreChatHook(hook func(context.Context, string)) { c.preChatHook = hook }
 
 // ChatResult is the output of a single conversation turn.
 type ChatResult struct {
 	Response      string
 	Emotion       types.EmotionState
 	EmotionSource string // "llm"|"rule"
+	Timing        ChatTiming
+}
+
+// ChatTiming exposes user-visible and internal stage latency for repeatable
+// evaluation. Values are milliseconds and exclude asynchronous post-chat work.
+type ChatTiming struct {
+	EmotionMS     float64 `json:"emotion_ms"`
+	RecallMS      float64 `json:"recall_ms"`
+	PromptMS      float64 `json:"prompt_ms"`
+	GenerationMS  float64 `json:"generation_ms"`
+	MemoryWriteMS float64 `json:"memory_write_ms"`
+	TTFTMS        float64 `json:"ttft_ms"`
+	TotalMS       float64 `json:"total_ms"`
 }
 
 // NewChatOrchestrator wires all adapters into a conversation pipeline.
@@ -92,11 +105,14 @@ type turnContext struct {
 	boundaries   []port.MemorySearchResult
 	promptResult BuildResult
 	enrichedMsg  string
+	timing       ChatTiming
 }
 
 // prepareTurn runs the shared pipeline: emotion → recall → prompt.
 func (c *ChatOrchestrator) prepareTurn(ctx context.Context, userMsg string) *turnContext {
+	timing := ChatTiming{}
 	// Step 1: Emotion evaluation
+	stageStart := time.Now()
 	recentTurns := c.buildRecentTurns(userMsg)
 	evalResult, err := c.emotionEval.Evaluate(ctx, &port.EmotionEvalInput{
 		SourceType:  "chat",
@@ -112,13 +128,17 @@ func (c *ChatOrchestrator) prepareTurn(ctx context.Context, userMsg string) *tur
 	}
 	c.recall.SetMoodBias(evalResult.State.Valence)
 	c.worker.UpdateEmotionState(evalResult.State.Valence, evalResult.State.Arousal)
+	timing.EmotionMS = durationMS(time.Since(stageStart))
 
 	// Step 2: Memory recall
+	stageStart = time.Now()
 	facts, _ := c.recall.HybridSearch(ctx, userMsg, 5)
 	diaries, _ := c.recall.SearchDiaries(ctx, userMsg, 2)
 	boundaries, _ := c.recall.SearchBoundaries(ctx)
+	timing.RecallMS = durationMS(time.Since(stageStart))
 
 	// Step 3: Build prompt (with screen context)
+	stageStart = time.Now()
 	screenSummary := c.collectScreenSummary(ctx)
 	promptResult := c.promptBldr.Build(BuildInput{
 		UserMessage:   userMsg,
@@ -133,6 +153,7 @@ func (c *ChatOrchestrator) prepareTurn(ctx context.Context, userMsg string) *tur
 	for _, w := range promptResult.Warnings {
 		log.Printf("[ChatOrchestrator] prompt warning: %s", w)
 	}
+	timing.PromptMS = durationMS(time.Since(stageStart))
 
 	return &turnContext{
 		evalResult:   evalResult,
@@ -141,13 +162,14 @@ func (c *ChatOrchestrator) prepareTurn(ctx context.Context, userMsg string) *tur
 		boundaries:   boundaries,
 		promptResult: promptResult,
 		enrichedMsg:  c.promptBldr.WrapUserMessage(userMsg, promptResult.MemoryContext),
+		timing:       timing,
 	}
 }
 
 // OnUserMessage processes a single conversation turn.
 func (c *ChatOrchestrator) OnUserMessage(ctx context.Context, userMsg string) (*ChatResult, error) {
 	if c.preChatHook != nil {
-		c.preChatHook()
+		c.preChatHook(ctx, userMsg)
 	}
 	if cached := c.checkDedup(userMsg); cached != nil {
 		log.Printf("[ChatOrchestrator] dedup hit: %q → cached response", truncateForRouting(userMsg))
@@ -162,12 +184,17 @@ func (c *ChatOrchestrator) OnUserMessage(ctx context.Context, userMsg string) (*
 		return nil, fmt.Errorf("no LLM executor configured")
 	}
 
+	generationStart := time.Now()
 	response, err := c.chatWithTools(ctx, tc)
 	if err != nil {
 		return nil, err
 	}
+	tc.timing.GenerationMS = durationMS(time.Since(generationStart))
+	tc.timing.TTFTMS = durationMS(time.Since(start))
 
+	memoryStart := time.Now()
 	c.worker.OnAfterChat(ctx, userMsg, response)
+	tc.timing.MemoryWriteMS = durationMS(time.Since(memoryStart))
 
 	c.storeDedup(userMsg, response, tc.evalResult.State, tc.evalResult.Source)
 
@@ -176,6 +203,8 @@ func (c *ChatOrchestrator) OnUserMessage(ctx context.Context, userMsg string) (*
 	}
 
 	elapsed := time.Since(start)
+	tc.timing.TotalMS = durationMS(elapsed)
+	logChatTiming(tc.timing)
 	log.Printf("[ChatOrchestrator] turn complete in %v (emotion=%s/%s V=%.2f A=%.2f D=%.2f, facts=%d, diaries=%d)",
 		elapsed, tc.evalResult.State.Primary, tc.evalResult.Source, tc.evalResult.State.Valence, tc.evalResult.State.Arousal, tc.evalResult.State.Dominance, len(tc.facts), len(tc.diaries))
 
@@ -183,6 +212,7 @@ func (c *ChatOrchestrator) OnUserMessage(ctx context.Context, userMsg string) (*
 		Response:      response,
 		Emotion:       tc.evalResult.State,
 		EmotionSource: tc.evalResult.Source,
+		Timing:        tc.timing,
 	}, nil
 }
 
@@ -215,7 +245,7 @@ func (c *ChatOrchestrator) storeDedup(msg, response string, emotion types.Emotio
 // OnUserMessageStream processes a conversation turn with streaming LLM output.
 func (c *ChatOrchestrator) OnUserMessageStream(ctx context.Context, userMsg string, onChunk func(chunk string) error) (*ChatResult, error) {
 	if c.preChatHook != nil {
-		c.preChatHook()
+		c.preChatHook(ctx, userMsg)
 	}
 	if cached := c.checkDedup(userMsg); cached != nil {
 		for _, chunk := range splitChunks(cached.response, 20) {
@@ -236,6 +266,15 @@ func (c *ChatOrchestrator) OnUserMessageStream(ctx context.Context, userMsg stri
 	// (non-streaming), then pseudo-stream the final response.
 	// If no tools, use real streaming directly.
 	var response string
+	generationStart := time.Now()
+	firstChunk := true
+	emitChunk := func(chunk string) error {
+		if firstChunk {
+			firstChunk = false
+			tc.timing.TTFTMS = durationMS(time.Since(start))
+		}
+		return onChunk(chunk)
+	}
 	if c.toolRegistry != nil && c.toolRegistry.ToolCount() > 0 {
 		resp, err := c.chatWithTools(ctx, tc)
 		if err != nil {
@@ -243,26 +282,30 @@ func (c *ChatOrchestrator) OnUserMessageStream(ctx context.Context, userMsg stri
 		}
 		response = resp
 		for _, chunk := range splitChunks(response, 20) {
-			if err := onChunk(chunk); err != nil {
+			if err := emitChunk(chunk); err != nil {
 				return nil, fmt.Errorf("stream chunk: %w", err)
 			}
 		}
 	} else {
 		var fullResponse strings.Builder
-		err := c.executor.ChatStream(ctx, tc.promptResult.SystemPrompt, []port.LLMMessage{
+		chatCtx := port.WithLLMCallMetadata(ctx, "chat", "chat_response")
+		err := c.executor.ChatStream(chatCtx, tc.promptResult.SystemPrompt, []port.LLMMessage{
 			{Role: "user", Content: tc.enrichedMsg},
 		}, func(chunk string) error {
 			fullResponse.WriteString(chunk)
-			return onChunk(chunk)
+			return emitChunk(chunk)
 		})
 		if err != nil {
 			return nil, fmt.Errorf("llm stream: %w", err)
 		}
 		response = fullResponse.String()
 	}
+	tc.timing.GenerationMS = durationMS(time.Since(generationStart))
 
 	// Step 5: Write to memory
+	memoryStart := time.Now()
 	c.worker.OnAfterChat(ctx, userMsg, response)
+	tc.timing.MemoryWriteMS = durationMS(time.Since(memoryStart))
 	c.storeDedup(userMsg, response, tc.evalResult.State, tc.evalResult.Source)
 
 	if c.postChatHook != nil {
@@ -270,6 +313,8 @@ func (c *ChatOrchestrator) OnUserMessageStream(ctx context.Context, userMsg stri
 	}
 
 	elapsed := time.Since(start)
+	tc.timing.TotalMS = durationMS(elapsed)
+	logChatTiming(tc.timing)
 	log.Printf("[ChatOrchestrator] stream turn complete in %v (emotion=%s/%s V=%.2f A=%.2f D=%.2f, facts=%d, diaries=%d)",
 		elapsed, tc.evalResult.State.Primary, tc.evalResult.Source, tc.evalResult.State.Valence, tc.evalResult.State.Arousal, tc.evalResult.State.Dominance, len(tc.facts), len(tc.diaries))
 
@@ -277,7 +322,18 @@ func (c *ChatOrchestrator) OnUserMessageStream(ctx context.Context, userMsg stri
 		Response:      response,
 		Emotion:       tc.evalResult.State,
 		EmotionSource: tc.evalResult.Source,
+		Timing:        tc.timing,
 	}, nil
+}
+
+func durationMS(duration time.Duration) float64 {
+	return float64(duration.Microseconds()) / 1000
+}
+
+func logChatTiming(timing ChatTiming) {
+	log.Printf("[ChatTiming] emotion_ms=%.3f recall_ms=%.3f prompt_ms=%.3f generation_ms=%.3f memory_write_ms=%.3f ttft_ms=%.3f total_ms=%.3f",
+		timing.EmotionMS, timing.RecallMS, timing.PromptMS, timing.GenerationMS,
+		timing.MemoryWriteMS, timing.TTFTMS, timing.TotalMS)
 }
 
 // splitChunks splits text into character-sized chunks for pseudo-streaming.
@@ -297,35 +353,25 @@ func splitChunks(s string, charCount int) []string {
 	return chunks
 }
 
-// chatWithTools routes to the best channel, filters tools, and executes.
+// chatWithTools exposes the small built-in tool set directly to the main call.
+// A separate LLM routing call added latency and cost to every ordinary chat;
+// function calling already lets the provider choose whether a tool is needed.
 func (c *ChatOrchestrator) chatWithTools(ctx context.Context, tc *turnContext) (string, error) {
 	if c.toolRegistry != nil && c.toolRegistry.ToolCount() > 0 {
-		channel := c.routeChannel(ctx, tc.enrichedMsg)
-		log.Printf("[ChatOrchestrator] routed to channel: %s", channel)
-
-		toolNames := channelToolNames(channel)
-		var specs []port.ToolDef
-		if len(toolNames) > 0 {
-			// Try to get filtered specs from registry
-			if tr, ok := c.toolRegistry.(*tool.ToolRegistry); ok {
-				specs = tr.SpecsByNames(toolNames)
-			}
-		}
-		if len(specs) == 0 {
-			specs = trSpecs(c.toolRegistry)
-		}
+		specs := trSpecs(c.toolRegistry)
 
 		resp, resultCount, err := c.executeWithSpecs(ctx, tc, specs)
 		if err != nil {
 			log.Printf("[ChatOrchestrator] tool call failed: %v, falling back to chat", err)
 		} else if resultCount > 0 || resp != "" {
 			if resultCount > 0 {
-				log.Printf("[ChatOrchestrator] tool results: %d calls (channel=%s, tools=%d)", resultCount, channel, len(specs))
+				log.Printf("[ChatOrchestrator] tool results: %d calls (tools=%d)", resultCount, len(specs))
 			}
 			return resp, nil
 		}
 	}
-	return c.executor.Chat(ctx, tc.promptResult.SystemPrompt, []port.LLMMessage{
+	chatCtx := port.WithLLMCallMetadata(ctx, "chat", "chat_response")
+	return c.executor.Chat(chatCtx, tc.promptResult.SystemPrompt, []port.LLMMessage{
 		{Role: "user", Content: tc.enrichedMsg},
 	})
 }
@@ -334,7 +380,8 @@ func (c *ChatOrchestrator) chatWithTools(ctx context.Context, tc *turnContext) (
 func (c *ChatOrchestrator) executeWithSpecs(ctx context.Context, tc *turnContext, tools []port.ToolDef) (string, int, error) {
 	systemPrompt := tc.promptResult.SystemPrompt + "\n\n" + toolAuthorization(tools)
 	var toolResults int
-	resp, err := c.executor.ChatWithTools(ctx, systemPrompt,
+	chatCtx := port.WithLLMCallMetadata(ctx, "chat", "chat_response")
+	resp, err := c.executor.ChatWithTools(chatCtx, systemPrompt,
 		[]port.LLMMessage{{Role: "user", Content: tc.enrichedMsg}},
 		tools,
 		func(name, argsJSON string) string {
@@ -364,68 +411,11 @@ func trSpecs(provider port.ChatToolProvider) []port.ToolDef {
 	return nil
 }
 
-// ── Channel Routing ─────────────────────────────────────────────────
-
-// routeChannel asks the LLM which execution channel fits the user's request.
-// Returns one of: "browser", "desktop", "file", "shell", "search", "mixed".
-func (c *ChatOrchestrator) routeChannel(ctx context.Context, userMsg string) string {
-	prompt := fmt.Sprintf(`You are a task router. Classify the user request into ONE channel.
-
-User request: "%s"
-
-Channels:
-- browser — web tasks: open URLs, search the web, read web pages, fill forms
-- desktop — control desktop apps: open Safari/Chrome, click UI, type in apps
-- file — file operations: read/write/edit files
-- shell — run commands: git, build, npm, system info
-- search — web search only: quick fact lookups, documentation search
-- mixed — unclear or needs multiple channels
-
-Respond with ONLY the channel name (one word).`, truncateForRouting(userMsg))
-
-	resp, err := c.executor.Chat(ctx, "", []port.LLMMessage{
-		{Role: "user", Content: prompt},
-	})
-	if err != nil {
-		return "mixed" // fallback: use all tools
-	}
-	resp = strings.TrimSpace(strings.ToLower(resp))
-	// Normalize common LLM verbosity
-	for _, ch := range []string{"browser", "desktop", "file", "shell", "search", "mixed"} {
-		if strings.Contains(resp, ch) {
-			return ch
-		}
-	}
-	return "mixed"
-}
-
 func truncateForRouting(s string) string {
 	if len(s) > 200 {
 		return s[:200] + "..."
 	}
 	return s
-}
-
-// channelToolNames returns the tool names for a given channel.
-func channelToolNames(channel string) []string {
-	switch channel {
-	case "browser":
-		return []string{"browser", "web_search"}
-	case "desktop":
-		return []string{"computer_use"}
-	case "file":
-		return []string{"read_file", "write_file", "edit_file"}
-	case "shell":
-		return []string{"exec_command"}
-	case "search":
-		return []string{"web_search"}
-	default:
-		return nil // nil = use all tools
-	}
-}
-
-func allToolNames() []string {
-	return []string{"browser", "web_search", "computer_use", "read_file", "write_file", "edit_file", "exec_command"}
 }
 
 // toolAuthorization returns a prompt fragment granting explicit permission to use tools.

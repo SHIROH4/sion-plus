@@ -16,6 +16,8 @@
             :content="msg.content"
             :timestamp="msg.timestamp"
             :streaming="msg.streaming"
+            :decision-id="msg.decisionId"
+            @feedback="store.feedback"
           />
         </div>
       </GlassCard>

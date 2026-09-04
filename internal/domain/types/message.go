@@ -21,6 +21,7 @@ const (
 
 // Message is a single chat message with optional compression metadata.
 type Message struct {
+	ID        int64       `json:"id,omitempty"`
 	Role      MessageRole `json:"role"`
 	Content   string      `json:"content"`
 	Images    []string    `json:"images,omitempty"` // base64 encoded
@@ -31,10 +32,11 @@ type Message struct {
 // MessageMeta carries compression-level metadata for inline archive markers.
 // Level 0 = raw message, Level 1-3 = LLM summaries of increasing compression.
 type MessageMeta struct {
-	Level     int       `json:"level"`
-	StartTime time.Time `json:"start_time"`
-	EndTime   time.Time `json:"end_time"`
-	Name      string    `json:"name"` // archive marker label, e.g. "L1-20240101120000"
+	Level        int       `json:"level"`
+	StartTime    time.Time `json:"start_time"`
+	EndTime      time.Time `json:"end_time"`
+	Name         string    `json:"name"`                    // archive marker label, e.g. "L1-20240101120000"
+	MemoryPolicy string    `json:"memory_policy,omitempty"` // durable|ephemeral
 }
 
 // ChatContext carries the full pipeline context through a chat turn.

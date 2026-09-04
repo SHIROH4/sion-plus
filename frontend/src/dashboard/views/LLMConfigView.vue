@@ -17,11 +17,11 @@
     <GlassCard padding="md" radius="lg" :loading="store.loading" :error="store.error" @retry="store.fetch()">
       <label class="section-label">模型路由</label>
       <div class="routes-grid">
-        <div v-for="(label, key) in store.routeLabels" :key="key" class="route-item">
+        <div v-for="[key, label] in routeEntries" :key="key" class="route-item">
           <span class="route-label">{{ label }}</span>
           <n-select
-            :value="store.routes[key as keyof typeof store.routes]"
-            @update:value="(v: string) => { (store.routes as Record<string, string>)[key as string] = v; store.markDirty() }"
+            :value="store.routes[key]"
+            @update:value="(v: string) => { store.routes[key] = v; store.markDirty() }"
             :options="routeOptions"
             size="small"
             style="width: 140px"
@@ -82,8 +82,10 @@
 import { computed, onMounted } from 'vue'
 import GlassCard from '../components/GlassCard.vue'
 import { useLLMConfigStore } from '../stores/llmConfig'
+import type { LLMRoutes } from '@/shared/types'
 
 const store = useLLMConfigStore()
+const routeEntries = computed(() => Object.entries(store.routeLabels) as [keyof LLMRoutes, string][])
 
 const routeOptions = computed(() => {
   const names = store.providerNames()

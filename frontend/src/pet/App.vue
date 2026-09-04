@@ -26,8 +26,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import PetLive2D from './components/PetLive2D.vue'
 import ChatCapsule from './components/ChatCapsule.vue'
+import { API_ORIGIN } from '@/shared/api'
 
-const API = 'http://127.0.0.1:8080'
+const API = API_ORIGIN
 
 const petRef = ref<InstanceType<typeof PetLive2D>>()
 const hovered = ref(false)

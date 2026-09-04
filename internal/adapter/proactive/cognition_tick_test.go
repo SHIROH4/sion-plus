@@ -82,7 +82,7 @@ func TestCognitionTickBuildIntent(t *testing.T) {
 
 	// Test speak_inquiry → high priority
 	action := cognition.ActionByName("speak_inquiry")
-	intent := tick.buildIntent(ctx, f, action, false)
+	intent := tick.buildIntent(ctx, "decision-test", f, action, false)
 	if intent == nil {
 		t.Fatal("expected intent")
 	}
@@ -98,7 +98,7 @@ func TestCognitionTickBuildIntent(t *testing.T) {
 
 	// Test care action → normal priority
 	careAction := cognition.ActionByName("care_rest")
-	careIntent := tick.buildIntent(ctx, f, careAction, false)
+	careIntent := tick.buildIntent(ctx, "decision-care", f, careAction, false)
 	if careIntent == nil {
 		t.Fatal("expected intent")
 	}
@@ -108,7 +108,7 @@ func TestCognitionTickBuildIntent(t *testing.T) {
 
 	// Test casual → low priority
 	casualAction := cognition.ActionByName("speak_casual")
-	casualIntent := tick.buildIntent(ctx, f, casualAction, false)
+	casualIntent := tick.buildIntent(ctx, "decision-casual", f, casualAction, false)
 	if casualIntent == nil {
 		t.Fatal("expected intent")
 	}
@@ -118,13 +118,13 @@ func TestCognitionTickBuildIntent(t *testing.T) {
 
 	// Test "none" with System2 → nil
 	noneAction := cognition.ActionByName("none")
-	noneIntent := tick.buildIntent(ctx, f, noneAction, true)
+	noneIntent := tick.buildIntent(ctx, "decision-none", f, noneAction, true)
 	if noneIntent != nil {
 		t.Error("System2 'none' should produce nil intent")
 	}
 
 	// Test "none" with System1 → not nil (S1 passes through)
-	noneIntentS1 := tick.buildIntent(ctx, f, noneAction, false)
+	noneIntentS1 := tick.buildIntent(ctx, "decision-none-s1", f, noneAction, false)
 	if noneIntentS1 == nil {
 		t.Error("System1 'none' should produce intent (silence is valid action)")
 	}
@@ -163,11 +163,11 @@ func TestCognitionTickBackoff(t *testing.T) {
 	}
 }
 
-func TestCognitionTickOnUserMessageResetsCounter(t *testing.T) {
+func TestCognitionTickOnUserMessageDoesNotSettleProactiveDecision(t *testing.T) {
 	tick := &CognitionTick{unansweredProactive: 5}
-	tick.OnUserMessage()
-	if tick.unansweredProactive != 0 {
-		t.Errorf("OnUserMessage should reset unanswered to 0, got %d", tick.unansweredProactive)
+	tick.OnUserMessage(context.Background(), "unrelated chat")
+	if tick.unansweredProactive != 5 {
+		t.Errorf("ordinary chat must not reset unanswered proactive count, got %d", tick.unansweredProactive)
 	}
 	if tick.lastUserMessageAt.IsZero() {
 		t.Error("lastUserMessageAt should be set")

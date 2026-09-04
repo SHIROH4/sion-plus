@@ -74,6 +74,7 @@ func (e *ScreenLLMEnricher) Analyze(ctx context.Context) (*ScreenEnrichment, err
 	prompt := buildVisionPrompt(obs, snap)
 
 	// 4. Call vision LLM
+	ctx = port.WithLLMCallMetadata(ctx, "vision", "screen_enrich")
 	resp, err := e.executor.Chat(ctx, "", []port.LLMMessage{
 		port.NewVisionMessage(prompt, b64),
 	})

@@ -87,6 +87,7 @@ func (b *IdentityBuilder) BuildIdentity(ctx context.Context) error {
 func (b *IdentityBuilder) generateModel(ctx context.Context, label, current string, traits []string) (string, error) {
 	prompt := fmt.Sprintf(identityBuildPrompt, label, current, strings.Join(traits, "\n- "))
 
+	ctx = port.WithLLMCallMetadata(ctx, "memory", "identity_build")
 	resp, err := b.executor.Chat(ctx, "", []port.LLMMessage{
 		{Role: "user", Content: prompt},
 	})

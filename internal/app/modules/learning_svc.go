@@ -55,15 +55,14 @@ func (s *LearningService) SetExecutor(exec port.LLMExecutor) {
 func (s *LearningService) Name() string { return "learning" }
 
 func (s *LearningService) Init(ctx context.Context) error {
-	log.Println("[LearningService] initialized (learner + strategy agent + curiosity engine)")
+	log.Println("[LearningService] initialized (strategy agent + curiosity engine; legacy weight learner disabled)")
 	return nil
 }
 
 func (s *LearningService) Start(ctx context.Context) error {
-	go s.learningLoop(ctx)
 	go s.strategyLoop(ctx)
 	go s.curiosityLoop(ctx)
-	log.Println("[LearningService] started (3 background loops)")
+	log.Println("[LearningService] started (2 background loops; contextual preference policy runs in cognition tick)")
 	return nil
 }
 
@@ -80,7 +79,10 @@ func (s *LearningService) Health(ctx context.Context) error {
 
 // ── Background Loops ──
 
-// learningLoop checks every 30 minutes whether batch learning should run.
+// learningLoop is retained as an offline experiment only. It is deliberately
+// not started: the legacy update has no chosen/rejected preference pairs and
+// its WeightMatrix is not part of the production scorer. Runtime adaptation is
+// implemented by the auditable contextual-preference policy instead.
 func (s *LearningService) learningLoop(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()
@@ -95,7 +97,7 @@ func (s *LearningService) learningLoop(ctx context.Context) {
 			if s.Learner.ShouldLearn() {
 				count := s.Learner.BatchLearn(ctx)
 				if count > 0 {
-					log.Printf("[LearningService] batch DPO update: %d actions", count)
+					log.Printf("[LearningService] legacy offline weight update: %d actions", count)
 				}
 			}
 		}

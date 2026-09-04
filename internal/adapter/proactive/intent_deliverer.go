@@ -38,6 +38,7 @@ func (d *intentDeliverer) Deliver(ctx context.Context, intents []types.Proactive
 	intentText := d.buildIntentText(intents)
 	prompt := fmt.Sprintf(proactiveGeneratePrompt, d.personality, intentText)
 
+	ctx = port.WithLLMCallMetadata(ctx, "chat", "proactive_expression")
 	resp, err := d.executor.Chat(ctx, "", []port.LLMMessage{
 		{Role: "user", Content: prompt},
 	})
@@ -51,9 +52,14 @@ func (d *intentDeliverer) Deliver(ctx context.Context, intents []types.Proactive
 
 	// Push to SSE — matching oyasumi-sion: chat-message topic for both windows
 	if d.broker != nil {
+		decisionID := ""
+		if len(intents) == 1 {
+			decisionID = intents[0].DecisionID
+		}
 		d.broker.Publish("chat-message", map[string]string{
-			"role":    "assistant",
-			"content": resp,
+			"role":        "assistant",
+			"content":     resp,
+			"decision_id": decisionID,
 		})
 	}
 

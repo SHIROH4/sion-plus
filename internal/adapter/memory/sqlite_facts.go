@@ -143,7 +143,7 @@ func (s *SQLiteStore) SaveFact(ctx context.Context, fact *types.FactEntry) error
 		fact.Source, fact.MemCellType, nullableInt64(fact.EpisodeID),
 		boolToInt(fact.Archived),
 		0, 0, // signal_processed=0 (pending), absorbed=0
-		"", "", // embedding cache not yet filled
+		fact.EmbeddingTextSHA256, fact.EmbeddingModelID,
 		0, 0, // event_start_at, event_end_at
 		fact.CreatedAt, fact.UpdatedAt,
 	)
@@ -158,6 +158,43 @@ func (s *SQLiteStore) SaveFact(ctx context.Context, fact *types.FactEntry) error
 		id, fact.Content, fact.Entity, fact.RelationType,
 	)
 	return nil
+}
+
+// MergeFactCandidate records a high-confidence equivalent fact without adding
+// another active row. It preserves provenance and an audit record atomically.
+func (s *SQLiteStore) MergeFactCandidate(ctx context.Context, targetID int64, incoming *types.FactEntry, sourceMessageIDs []int64, reason string, similarity float64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	now := time.Now().Unix()
+	result, err := tx.ExecContext(ctx, `UPDATE facts
+		SET observation_count=observation_count+1,
+			importance=CASE WHEN importance < ? THEN ? ELSE importance END,
+			updated_at=?
+		WHERE id=? AND archived=0`, incoming.Importance, incoming.Importance, now, targetID)
+	if err != nil {
+		return fmt.Errorf("MergeFactCandidate update: %w", err)
+	}
+	if affected, _ := result.RowsAffected(); affected != 1 {
+		return fmt.Errorf("MergeFactCandidate target %d not active", targetID)
+	}
+	for _, messageID := range sourceMessageIDs {
+		if _, err := tx.ExecContext(ctx, `INSERT OR IGNORE INTO fact_sources(fact_id, message_id, created_at) VALUES(?,?,?)`, targetID, messageID, now); err != nil {
+			return fmt.Errorf("MergeFactCandidate source: %w", err)
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO fact_merge_audit(
+		target_fact_id, incoming_entity, incoming_relation_type, incoming_content,
+		reason, similarity, created_at) VALUES(?,?,?,?,?,?,?)`,
+		targetID, incoming.Entity, incoming.RelationType, incoming.Content, reason, similarity, now); err != nil {
+		return fmt.Errorf("MergeFactCandidate audit: %w", err)
+	}
+	return tx.Commit()
 }
 
 func (s *SQLiteStore) GetFact(ctx context.Context, id int64) (*types.FactEntry, error) {
@@ -530,6 +567,10 @@ func scanFact(row *sql.Row) (*types.FactEntry, error) {
 	json.Unmarshal([]byte(evidenceJSON), &f.Evidence)
 	json.Unmarshal([]byte(contextJSON), &f.ContextTags)
 	f.Oscillating = oscillatingInt != 0
+	f.SignalProcessed = signalProc != 0
+	f.Absorbed = absorbedInt != 0
+	f.EmbeddingTextSHA256 = embSHA
+	f.EmbeddingModelID = embModel
 	if episodeID.Valid {
 		f.EpisodeID = episodeID.Int64
 	}
@@ -565,6 +606,10 @@ func scanFacts(rows *sql.Rows) ([]types.FactEntry, error) {
 		json.Unmarshal([]byte(evidenceJSON), &f.Evidence)
 		json.Unmarshal([]byte(contextJSON), &f.ContextTags)
 		f.Oscillating = oscillatingInt != 0
+		f.SignalProcessed = signalProc != 0
+		f.Absorbed = absorbedInt != 0
+		f.EmbeddingTextSHA256 = embSHA
+		f.EmbeddingModelID = embModel
 		if episodeID.Valid {
 			f.EpisodeID = episodeID.Int64
 		}

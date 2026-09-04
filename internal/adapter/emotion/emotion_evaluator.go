@@ -32,6 +32,13 @@ func (e *EmotionEvaluator) Evaluate(ctx context.Context, input *port.EmotionEval
 		state, vec := e.store.Current()
 		return &port.EmotionEvalResult{State: state, Vector: vec, Source: "cache"}, nil
 	}
+	if !needsLLMEmotionEvaluation(input.CurrentMsg) {
+		delta := e.evaluateRules(input.CurrentMsg)
+		delta.Source = "rule_gate"
+		e.store.ApplyDelta(delta)
+		state, vec := e.store.Current()
+		return &port.EmotionEvalResult{Delta: delta, State: state, Vector: vec, Source: "rule_gate"}, nil
+	}
 
 	// Tier 1: LLM
 	if e.executor != nil && e.executor.IsAvailable(ctx) {
@@ -56,9 +63,27 @@ func (e *EmotionEvaluator) Evaluate(ctx context.Context, input *port.EmotionEval
 	return &port.EmotionEvalResult{Delta: delta, State: state, Vector: vec, Source: "rule"}, nil
 }
 
+// needsLLMEmotionEvaluation keeps neutral commands and technical queries on the
+// deterministic path. Emotionally salient or relational language still uses
+// the LLM, preserving nuance where it matters.
+func needsLLMEmotionEvaluation(text string) bool {
+	lower := strings.ToLower(text)
+	markers := []string{
+		"开心", "难过", "焦虑", "生气", "害怕", "孤独", "累", "烦", "压力", "委屈", "喜欢", "讨厌", "爱", "真好", "想哭", "抱歉", "谢谢", "陪我", "安慰", "心情", "感受",
+		"happy", "sad", "anxious", "angry", "afraid", "lonely", "tired", "annoyed", "stress", "love", "hate", "sorry", "thanks", "feel",
+	}
+	for _, marker := range markers {
+		if strings.Contains(lower, marker) {
+			return true
+		}
+	}
+	return false
+}
+
 // ── LLM path ─────────────────────────────────────────────────────
 
 func (e *EmotionEvaluator) evaluateLLM(ctx context.Context, currentMsg, recentTurns string) (*types.EmotionDelta, error) {
+	ctx = port.WithLLMCallMetadata(ctx, "emotion", "emotion_eval")
 	prompt := buildEmotionDeltaPrompt(LangZH, currentMsg, recentTurns)
 	resp, err := e.executor.Chat(ctx, "", []port.LLMMessage{
 		{Role: "user", Content: prompt},

@@ -12,12 +12,16 @@ Sion 是一个 AI 桌面伙伴应用，运行在 macOS 上，提供情感陪伴�
 |------|------|
 | **情感系统** | 8 维内部情感向量（好感/烦躁/孤独/好奇/自信/困倦/调皮/担心）→ PAD 三维外显 + EMA 平滑 + 昼夜节律 |
 | **主动认知** | System 1（纯数学评分）/ System 2（LLM 推理）双轨决策，16 种动作 × 5 维驱动力 dot-product 评分 |
-| **记忆管道** | L0 工作记忆 → L1 日记 → L2 事实 → L3 策略，双信号半衰期证据引擎 + BM25/向量混合召回 |
-| **DPO 学习** | 从行为结果中批量更新动作权重矩阵，自动审计卡死动作和权重漂移 |
+| **记忆管道** | L0 工作记忆 → L1 日记 → L2 事实 → L3 策略；持久化游标增量提取，结合规范化文本与本地 BGE 向量进行保守语义合并，保留来源和合并审计，支持临时消息跳过长期记忆 |
+| **偏好反馈闭环** | 持久化主动决策的上下文、候选动作、投递内容与显式反馈；以保守的样本阈值将反馈接入动作评分，并保留策略审计依据 |
 | **策略反思** | 定期 LLM 驱动的策略蒸馏，从日记+事实+线程中提取可复用的行为原则 |
 | **好奇引擎** | 扫描知识缺口（事实矛盾/休眠线程/不完整模式），调度探索行为 |
 | **插件系统** | SDK（Plugin/PluginContext/FunctionProvider/UIProvider）+ 6 个内置插件（chat/memory/vision/search/qq/timer） |
-| **多 Provider LLM** | 支持多 LLM 后端 fallback 链、路由表、健康检查、速率限制、Token 用量追踪 |
+| **多 Provider LLM** | 支持多 LLM 后端 fallback 链、按任务动态路由、统一限流与健康检查；Token 按主回复、情绪、记忆和主动决策等调用类型归因 |
+
+### 可复现实测
+
+两组各 20 轮固定中性对话测试均为 20/20 通过。引入情绪规则门控后，平均 TTFT 从 5.71 秒降至 2.90 秒（-49.3%），同步链路 Token 降低 49.9%；本地 BGE 接入后的 73 条既有事实已全部完成向量回填。测试定义、逐阶段耗时、Token 分类和结论边界见 [`docs/evaluation-round-2026-09-03.md`](docs/evaluation-round-2026-09-03.md)。
 
 ---
 
@@ -43,7 +47,7 @@ sion-v1/
 ├── cmd/sion/main.go              # 入口点
 ├── internal/
 │   ├── port/                     # 接口定义层（宪法）
-│   │   ├── learning.go           #   Learner / StrategyAgent / CuriosityEngine
+│   │   ├── learning.go           #   StrategyAgent / CuriosityEngine + legacy offline learner
 │   │   ├── cognition.go          #   FeatureComputer / DriveComputer / ActionScorer / DecisionRouter
 │   │   ├── memory.go             #   MemoryStore / EvidenceEngine / MemoryRecall
 │   │   ├── emotion.go            #   EmotionStateManager / EmotionSignalSource
@@ -57,7 +61,7 @@ sion-v1/
 │   │   │   ├── router.go         #   System 1 / System 2 路由
 │   │   │   ├── needs.go          #   6D 内在需求（稳态衰减）
 │   │   │   ├── motivator.go      #   动作评分（dot-product + 上下文调制）
-│   │   │   ├── learner.go        #   DPO 批量权重更新
+│   │   │   ├── learner.go        #   历史学习原型（未作为线上策略宣称）
 │   │   │   ├── strategy.go       #   反思调度 + 结果模式分析
 │   │   │   └── features.go       #   Tier 1 特征计算
 │   │   ├── emotion/              #   情感域逻辑（衰减/平滑/昼夜节律）
@@ -110,7 +114,8 @@ sion-v1/
 ```bash
 make build
 # 或
-go build -o sion ./cmd/sion/
+pnpm --dir frontend build
+mkdir -p bin && go build -o bin/sion ./cmd/sion/
 ```
 
 ### 运行
@@ -119,9 +124,19 @@ go build -o sion ./cmd/sion/
 export SION_LLM_URL="http://localhost:11434/v1"   # Ollama
 export SION_LLM_MODEL="qwen2.5:7b"
 export SION_DATA_DIR="$HOME/.sion"
+export SION_EMBED_URL="http://127.0.0.1:11434"
+export SION_EMBED_MODEL="hf.co/CompendiumLabs/bge-small-zh-v1.5-gguf:latest"
 
-./sion
+./bin/sion
 ```
+
+浏览器打开 `http://127.0.0.1:8080`。可通过 `SION_ADDR` 修改监听地址，
+通过 `SION_FRONTEND_DIR` 指定前端构建目录；默认读取 `frontend/dist`。
+
+本地联调 Vue + Electron 可直接运行 `make dev`。
+
+Embedding 默认使用本机 Ollama，并在启动后异步回填缺失或模型版本不一致的事实向量；
+服务不可用时自动退化到 BM25 与规范化文本匹配，不阻塞聊天主链路。
 
 ### 配置
 

@@ -3,6 +3,7 @@ package sse
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -125,6 +126,13 @@ func (b *Broker) loop() {
 
 // ServeHTTP handles an SSE connection. Reads ?topics=chat,emotion from query.
 func (b *Broker) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// SSE connections are intentionally long-lived. Clear the server-wide
+	// WriteTimeout for this response so an otherwise healthy subscription is
+	// not terminated while waiting for future events.
+	if err := http.NewResponseController(w).SetWriteDeadline(time.Time{}); err != nil && !errors.Is(err, http.ErrNotSupported) {
+		log.Printf("[SSE] clear write deadline: %v", err)
+	}
+
 	topicSet := make(map[string]struct{})
 	if raw := r.URL.Query().Get("topics"); raw != "" {
 		for _, t := range strings.Split(raw, ",") {

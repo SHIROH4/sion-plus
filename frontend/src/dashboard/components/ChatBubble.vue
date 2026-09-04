@@ -7,18 +7,31 @@
       {{ content }}<span v-if="streaming" class="streaming-cursor animate-cursor-blink">|</span>
     </div>
     <span v-if="timestamp" class="bubble-time">{{ formatTime(timestamp) }}</span>
+    <div v-if="decisionId" class="feedback-actions">
+      <button @click="$emit('feedback', decisionId, 'helpful')">有帮助</button>
+      <button @click="$emit('feedback', decisionId, 'irrelevant')">内容无关</button>
+      <button @click="$emit('feedback', decisionId, 'bad_timing')">时机不对</button>
+      <button @click="$emit('feedback', decisionId, 'wrong_tone')">表达不适</button>
+      <button @click="$emit('feedback', decisionId, 'snooze')">稍后</button>
+      <button @click="$emit('feedback', decisionId, 'stop')">别再提醒</button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { ProactiveFeedbackKind } from '@/shared/types'
+
 const props = withDefaults(defineProps<{
   role: 'user' | 'ai' | 'system'
   content: string
   timestamp?: number
   streaming?: boolean
+  decisionId?: string
 }>(), {
   streaming: false,
 })
+
+defineEmits<{ feedback: [decisionId: string, kind: ProactiveFeedbackKind] }>()
 
 function formatTime(ts: number): string {
   const d = new Date(ts)
@@ -80,4 +93,7 @@ function formatTime(ts: number): string {
   margin-top: 4px;
   align-self: flex-end;
 }
+.feedback-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+.feedback-actions button { border:0; border-radius:10px; padding:3px 7px; cursor:pointer; font:inherit; font-size:10px; color:var(--text-secondary); background:rgba(255,255,255,.45); }
+.feedback-actions button:hover { background:rgba(247,119,186,.18); color:var(--color-accent); }
 </style>

@@ -1,5 +1,7 @@
 # Sion v1.1 重构架构设计
 
+> **Status (2026-09)**: Learner / DPO-style weight-update sections below are historical design material. The loop is disabled because it has neither valid chosen/rejected pairs nor a connection to the production scorer. The active implementation is documented in `docs/contextual-preference-policy.md`.
+
 > **设计基准**: 对齐 N.E.K.O 的工程化深度 + 保留 Sion 的核心创新优势
 > **核心原则**: 模块化单进程（Modular Monolith）— 写时如微服务般解耦，运行时如单体般简洁
 >

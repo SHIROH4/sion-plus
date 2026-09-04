@@ -342,6 +342,100 @@ func TestDriveRecords(t *testing.T) {
 	}
 }
 
+func TestProactiveDecisionFeedbackAuditTrail(t *testing.T) {
+	ctx := context.Background()
+	store := newTestStore(t)
+	decision := &types.ProactiveDecision{
+		DecisionID:     "decision-test-1",
+		PolicyVersion:  "rules-v1-audit",
+		Action:         "care_rest",
+		Source:         "proactive",
+		Score:          0.82,
+		ContextJSON:    `{"policy_context":"period:day|mode:work","features":{"hour":14,"working":true}}`,
+		CandidatesJSON: `[{"action":"care_rest","score":0.82}]`,
+		Content:        "休息一下吧。",
+	}
+	if err := store.SaveProactiveDecision(ctx, decision); err != nil {
+		t.Fatalf("SaveProactiveDecision: %v", err)
+	}
+	pending, err := store.LatestPendingProactiveDecision(ctx, time.Now().Add(-time.Minute).Unix())
+	if err != nil || pending == nil || pending.DecisionID != decision.DecisionID {
+		t.Fatalf("LatestPendingProactiveDecision = %#v, err=%v", pending, err)
+	}
+	if err := store.SaveProactiveReply(ctx, &types.ProactiveReply{DecisionID: decision.DecisionID, Content: "这条对我有用", Attribution: "next_user_message", Confidence: 0.5}); err != nil {
+		t.Fatalf("SaveProactiveReply: %v", err)
+	}
+	if err := store.SaveProactiveReply(ctx, &types.ProactiveReply{DecisionID: decision.DecisionID, Content: "duplicate", Attribution: "next_user_message", Confidence: 0.5}); err != nil {
+		t.Fatalf("idempotent SaveProactiveReply: %v", err)
+	}
+	var replyCount int
+	if err := store.db.QueryRow(`SELECT COUNT(*) FROM proactive_replies WHERE decision_id=?`, decision.DecisionID).Scan(&replyCount); err != nil || replyCount != 1 {
+		t.Fatalf("reply correlation count=%d err=%v", replyCount, err)
+	}
+	feedback := &types.ProactiveFeedback{
+		EventID:    "feedback-test-1",
+		DecisionID: decision.DecisionID,
+		Kind:       types.FeedbackHelpful,
+		Reward:     1,
+		Source:     "ui",
+		Confidence: 1,
+	}
+	if err := store.SaveProactiveFeedback(ctx, feedback); err != nil {
+		t.Fatalf("SaveProactiveFeedback: %v", err)
+	}
+	if err := store.SaveProactiveFeedback(ctx, feedback); err != nil {
+		t.Fatalf("idempotent SaveProactiveFeedback: %v", err)
+	}
+	// A new event for the same decision is a correction: retain the raw audit
+	// trail but only the current value may affect policy statistics.
+	correction := &types.ProactiveFeedback{
+		EventID:    "feedback-test-2",
+		DecisionID: decision.DecisionID,
+		Kind:       types.FeedbackStop,
+		Reward:     -1,
+		Source:     "ui",
+		Confidence: 1,
+	}
+	if err := store.SaveProactiveFeedback(ctx, correction); err != nil {
+		t.Fatalf("correct SaveProactiveFeedback: %v", err)
+	}
+	if err := store.ResolveProactiveDecision(ctx, decision.DecisionID, time.Now().Unix()); err != nil {
+		t.Fatalf("ResolveProactiveDecision: %v", err)
+	}
+	decisions, err := store.ListProactiveDecisions(ctx, 10)
+	if err != nil {
+		t.Fatalf("ListProactiveDecisions: %v", err)
+	}
+	if len(decisions) != 1 || decisions[0].State != "resolved" {
+		t.Fatalf("decision audit state = %#v, want resolved decision", decisions)
+	}
+	stats, err := store.ActionFeedbackStatsForContext(ctx, "period:day|mode:work")
+	if err != nil || len(stats) != 1 || stats[0].HelpfulCount != 0 || stats[0].NegativeCount != 1 || stats[0].Samples != 1 {
+		t.Fatalf("contextual feedback stats = %#v, err=%v", stats, err)
+	}
+	evaluation, err := store.EvaluateProactivePolicy(ctx, time.Now().Add(-time.Hour).Unix())
+	if err != nil {
+		t.Fatalf("EvaluateProactivePolicy: %v", err)
+	}
+	if evaluation.Opportunities != 1 || evaluation.Delivered != 1 || evaluation.ExplicitFeedback != 1 || evaluation.ReplyCandidates != 1 || evaluation.NegativeRate != 1 {
+		t.Fatalf("unexpected policy evaluation: %#v", evaluation)
+	}
+	if err := store.UpsertProactiveControl(ctx, &types.ProactiveControl{Scope: "global", Mode: "snoozed", UntilAt: time.Now().Add(time.Hour).Unix(), Source: "test"}); err != nil {
+		t.Fatalf("UpsertProactiveControl: %v", err)
+	}
+	allowed, reason, err := store.ProactiveAllowed(ctx, "care_rest", "care", time.Now().Unix())
+	if err != nil || allowed || reason == "" {
+		t.Fatalf("active global control: allowed=%v reason=%q err=%v", allowed, reason, err)
+	}
+	if err := store.ClearProactiveControl(ctx, "global", ""); err != nil {
+		t.Fatalf("ClearProactiveControl: %v", err)
+	}
+	allowed, _, err = store.ProactiveAllowed(ctx, "care_rest", "care", time.Now().Unix())
+	if err != nil || !allowed {
+		t.Fatalf("cleared global control: allowed=%v err=%v", allowed, err)
+	}
+}
+
 func TestCountTodayMessages(t *testing.T) {
 	ctx := context.Background()
 	store := newTestStore(t)

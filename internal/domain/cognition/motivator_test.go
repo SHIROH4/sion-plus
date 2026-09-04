@@ -222,3 +222,59 @@ func TestScoreActionsSearchModulators(t *testing.T) {
 		t.Errorf("search should be penalized by low quota: normal=%.3f low_quota=%.3f", searchScore, searchScoreLow)
 	}
 }
+
+func TestApplyPreferenceBiasRequiresEnoughExplicitSignals(t *testing.T) {
+	base := []types.ScoredAction{
+		{Action: types.ActionDef{Name: "care_rest"}, FinalScore: 0.50, Modulators: map[string]float64{}},
+		{Action: types.ActionDef{Name: "speak_casual"}, FinalScore: 0.50, Modulators: map[string]float64{}},
+	}
+	tooFew := ApplyPreferenceBias(append([]types.ScoredAction(nil), base...), []types.ActionFeedbackStats{
+		{Action: "care_rest", Samples: 2, RewardSum: 2},
+	}, 3)
+	if findScore(tooFew, "care_rest") != 0.50 {
+		t.Fatal("fewer than min samples must not change the policy")
+	}
+
+	biased := ApplyPreferenceBias(append([]types.ScoredAction(nil), base...), []types.ActionFeedbackStats{
+		{Action: "care_rest", Samples: 5, RewardSum: 5},
+		{Action: "speak_casual", Samples: 5, RewardSum: -5},
+	}, 3)
+	if findScore(biased, "care_rest") <= 0.50 {
+		t.Error("positive explicit feedback should increase the action score")
+	}
+	if findScore(biased, "speak_casual") >= 0.50 {
+		t.Error("negative explicit feedback should decrease the action score")
+	}
+}
+
+func TestApplyContextualPreferenceBiasFallsBackToGlobal(t *testing.T) {
+	base := []types.ScoredAction{
+		{Action: types.ActionDef{Name: "care_rest"}, FinalScore: 0.50, Modulators: map[string]float64{}},
+	}
+	// Sparse local data must not overpower the more reliable global record.
+	biased := ApplyContextualPreferenceBias(base,
+		[]types.ActionFeedbackStats{{Action: "care_rest", Samples: 1, RewardSum: -1}},
+		[]types.ActionFeedbackStats{{Action: "care_rest", Samples: 5, RewardSum: 5}}, 3)
+	if findScore(biased, "care_rest") <= 0.50 {
+		t.Fatal("sparse local feedback should fall back to positive global feedback")
+	}
+
+	local := ApplyContextualPreferenceBias(base,
+		[]types.ActionFeedbackStats{{Action: "care_rest", Samples: 5, RewardSum: -5}},
+		[]types.ActionFeedbackStats{{Action: "care_rest", Samples: 5, RewardSum: 5}}, 3)
+	if findScore(local, "care_rest") >= 0.50 {
+		t.Fatal("sufficient contextual feedback should override global feedback")
+	}
+}
+
+func TestPreferenceBiasUsesBoundedShrinkage(t *testing.T) {
+	if got := preferenceBias(types.ActionFeedbackStats{Samples: 1, RewardSum: -1}); got >= 0 || got < -0.06 {
+		t.Fatalf("one negative sample should be mildly negative after shrinkage, got %.3f", got)
+	}
+	if got := preferenceBias(types.ActionFeedbackStats{Samples: 5, RewardSum: -5}); got < -0.12 || got >= -0.05 {
+		t.Fatalf("negative posterior must remain bounded, got %.3f", got)
+	}
+	if got := preferenceBias(types.ActionFeedbackStats{Samples: 4, RewardSum: 0}); got != 0 {
+		t.Fatalf("balanced reward should remain neutral, got %.3f", got)
+	}
+}

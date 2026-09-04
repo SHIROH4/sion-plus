@@ -6,8 +6,11 @@ export interface ChatMessage {
   timestamp: number
   emotion?: string
   source?: string // 'llm' | 'interrupted' | 'system'
+  decisionId?: string
   streaming?: boolean
 }
+
+export type ProactiveFeedbackKind = 'helpful' | 'dismiss' | 'irrelevant' | 'bad_timing' | 'wrong_tone' | 'snooze' | 'stop'
 
 export interface ChatResponse {
   response: string
@@ -97,6 +100,40 @@ export interface ProactiveAction {
   action: string
 }
 
+export interface ProactiveDecision {
+  decision_id: string
+  policy_version: string
+  action: string
+  source: string
+  score: number
+  context_json: string
+  candidates_json: string
+  content: string
+  state: 'silent' | 'blocked' | 'failed' | 'delivered' | 'resolved' | 'expired'
+  created_at: number
+  delivered_at: number
+  resolved_at: number
+}
+
+export interface ProactivePolicyEvaluation {
+  since_at: number
+  opportunities: number
+  delivered: number
+  blocked: number
+  silent: number
+  failed: number
+  explicit_feedback: number
+  feedback_rate: number
+  average_reward: number
+  negative_rate: number
+  reply_candidates: number
+  reply_candidate_rate: number
+  shadow_compared: number
+  shadow_different: number
+  shadow_matched_feedback: number
+  shadow_matched_reward: number
+}
+
 // === Personality ===
 export interface PersonalityConfig {
   name: string
@@ -104,6 +141,22 @@ export interface PersonalityConfig {
   traits: Record<string, number>
   speaking_style: string
   background: string
+}
+
+export interface PersonalityTraits {
+  warmth: number
+  playfulness: number
+  formality: number
+  curiosity: number
+  empathy: number
+}
+
+export interface LLMParameters {
+  temperature: number
+  topP: number
+  maxTokens: number
+  frequencyPenalty: number
+  presencePenalty: number
 }
 
 // === LLM Config ===

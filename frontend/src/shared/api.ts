@@ -18,10 +18,10 @@
 
 // In Electron production (file://), use absolute URL.
 // In dev mode, Vite proxies /api → :8080.
-const API_HOST = window.location.protocol === 'file:'
+export const API_ORIGIN = window.location.protocol === 'file:'
   ? 'http://127.0.0.1:8080'
   : ''
-const BASE = `${API_HOST}/api/v1`
+const BASE = `${API_ORIGIN}/api/v1`
 
 // ═══════════════════════════════════════════════════════════
 //  Wire types (match backend JSON exactly)
@@ -45,6 +45,11 @@ export interface EmotionData {
 export interface HealthData {
   status: string
   modules: Record<string, string>
+  cpu_cores: number
+  mem_used_mb: number
+  mem_total_mb: number
+  goroutines: number
+  uptime_sec: number
 }
 
 export interface ScreenData {
@@ -108,21 +113,24 @@ export async function sendMessage(message: string): Promise<ChatResult> {
   return httpPost<ChatResult>('/chat', { message })
 }
 
+export async function sendProactiveFeedback(decisionId: string, kind: import('@/shared/types').ProactiveFeedbackKind): Promise<void> {
+  const eventId = globalThis.crypto?.randomUUID?.() ?? `feedback-${decisionId}-${kind}-${Date.now()}`
+  await httpPost('/proactive/feedback', { event_id: eventId, decision_id: decisionId, kind })
+}
+
 export async function sendMessageStream(
   message: string,
   onToken: (token: string) => void,
   onDone: (result: ChatResult) => void,
   onError: (err: string) => void,
   source: string = 'dashboard',
+  clientMessageId?: string,
 ): Promise<void> {
   try {
-    // Bypass Vite proxy — it buffers SSE, killing streaming.
-    // Go backend has CORS * so cross-origin from :5173 to :8080 works.
-    const streamBase = window.location.protocol === 'file:' ? 'http://127.0.0.1:8080' : 'http://127.0.0.1:8080'
-    const res = await fetch(`${streamBase}/api/v1/chat/stream`, {
+		const res = await fetch(`${API_ORIGIN}/api/v1/chat/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, source }),
+      body: JSON.stringify({ message, source, client_message_id: clientMessageId }),
     })
     if (!res.ok) {
       const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }))
@@ -191,24 +199,25 @@ export async function getStats(): Promise<StatsData> {
 // ── Proactive ─────────────────────────────────────────────
 
 export async function getProactiveStatus(): Promise<import('@/shared/types').ProactiveStatus> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/proactive/status')
-  if (!res.ok) return { mode: 'off', interval_sec: 0, last_action: '', last_tick: 0 }
-  return res.json()
+	return httpGet<import('@/shared/types').ProactiveStatus>('/proactive/status')
 }
 
 export async function getProactiveActions(): Promise<import('@/shared/types').ProactiveAction[]> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/proactive/actions')
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data as { actions: import('@/shared/types').ProactiveAction[] }).actions || []
+	const data = await httpGet<{ actions: import('@/shared/types').ProactiveAction[] }>('/proactive/actions')
+	return (data as { actions: import('@/shared/types').ProactiveAction[] }).actions || []
+}
+
+export async function getProactiveDecisions(): Promise<import('@/shared/types').ProactiveDecision[]> {
+  const data = await httpGet<{ decisions: import('@/shared/types').ProactiveDecision[] }>('/proactive/decisions?limit=8')
+  return data.decisions || []
+}
+
+export async function getProactiveEvaluation(): Promise<import('@/shared/types').ProactivePolicyEvaluation> {
+  return httpGet<import('@/shared/types').ProactivePolicyEvaluation>('/proactive/evaluation?days=30')
 }
 
 export async function setProactiveMode(mode: string): Promise<void> {
-  await fetch('http://127.0.0.1:8080/api/v1/proactive/mode', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ mode }),
-  })
+	await httpPost('/proactive/mode', { mode })
 }
 
 // ── Chat History ──────────────────────────────────────────
@@ -220,11 +229,8 @@ export interface HistoryMessage {
 }
 
 export async function getChatHistory(limit = 50): Promise<HistoryMessage[]> {
-  const host = window.location.protocol === 'file:' ? 'http://127.0.0.1:8080' : 'http://127.0.0.1:8080'
-  const res = await fetch(`${host}/api/v1/chat/history`)
-  if (!res.ok) return []
-  const data = await res.json()
-  return (data as { messages: HistoryMessage[] }).messages || []
+	const data = await httpGet<{ messages: HistoryMessage[] }>(`/chat/history?limit=${limit}`)
+	return (data as { messages: HistoryMessage[] }).messages || []
 }
 
 // ── SSE Events ────────────────────────────────────────────
@@ -233,48 +239,44 @@ export function subscribeToSSE(
   topics: string[],
   onEvent: (topic: string, data: Record<string, unknown>) => void,
 ): () => void {
-  const url = `http://127.0.0.1:8080/api/events?topics=${topics.join(',')}`
-  let es = new EventSource(url)
+	const url = `${API_ORIGIN}/api/events?topics=${topics.join(',')}`
+  let es: EventSource | null = null
   let stopped = false
+  let reconnectTimer: ReturnType<typeof setTimeout> | null = null
 
-  for (const topic of topics) {
-    es.addEventListener(topic, (e: MessageEvent) => {
-      try { onEvent(topic, JSON.parse(e.data) as Record<string, unknown>) } catch { /* */ }
-    })
-  }
-
-  es.onerror = () => {
-    if (stopped) return
-    es.close()
-    setTimeout(() => {
+  const connect = () => {
+    es = new EventSource(url)
+    for (const topic of topics) {
+      es.addEventListener(topic, (e: MessageEvent) => {
+        try { onEvent(topic, JSON.parse(e.data) as Record<string, unknown>) } catch { /* */ }
+      })
+    }
+    es.onerror = () => {
       if (stopped) return
-      es = new EventSource(url)
-      for (const topic of topics) {
-        es.addEventListener(topic, (e: MessageEvent) => {
-          try { onEvent(topic, JSON.parse(e.data) as Record<string, unknown>) } catch { /* */ }
-        })
-      }
-    }, 3000)
+      es?.close()
+      reconnectTimer = setTimeout(connect, 3000)
+    }
   }
+  connect()
 
-  return () => { stopped = true; es.close() }
+  return () => {
+    stopped = true
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+    es?.close()
+  }
 }
 
 // ── Logs ───────────────────────────────────────────────────
 
 export async function getLogs(): Promise<import('@/shared/types').LogEntry[]> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/logs')
-  if (!res.ok) return []
-  const data = await res.json()
+	const data = await httpGet<{ logs: import('@/shared/types').LogEntry[] }>('/logs')
   return (data as { logs: import('@/shared/types').LogEntry[] }).logs || []
 }
 
 // ── Tools ──────────────────────────────────────────────────
 
 export async function getTools(): Promise<import('@/shared/types').ToolInfo[]> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/tools')
-  if (!res.ok) return []
-  const data = await res.json()
+	const data = await httpGet<{ tools: import('@/shared/types').ToolInfo[] }>('/tools')
   return (data as { tools: import('@/shared/types').ToolInfo[] }).tools || []
 }
 
@@ -287,22 +289,15 @@ export async function getMemoryFacts(params?: {
   if (params?.entity) qs.set('entity', params.entity)
   if (params?.source_tier) qs.set('source_tier', params.source_tier)
   if (params?.type) qs.set('type', params.type)
-  const host = 'http://127.0.0.1:8080'
-  const res = await fetch(`${host}/api/v1/memory/facts?${qs}`)
-  if (!res.ok) return { facts: [] }
-  return res.json()
+	return httpGet<{ facts: import('@/shared/types').FactEntry[] }>(`/memory/facts?${qs}`)
 }
 
 export async function getMemoryTopics(): Promise<{ topics: import('@/shared/types').Topic[] }> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/memory/topics')
-  if (!res.ok) return { topics: [] }
-  return res.json()
+	return httpGet<{ topics: import('@/shared/types').Topic[] }>('/memory/topics')
 }
 
 export async function getMemoryStats(): Promise<import('@/shared/types').MemoryStats> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/memory/stats')
-  if (!res.ok) return { total: 0, confirmed: 0, pending: 0, by_entity: {}, by_source: {}, by_type: {} }
-  return res.json()
+	return httpGet<import('@/shared/types').MemoryStats>('/memory/stats')
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -315,13 +310,11 @@ export async function deleteMemory(_id: string): Promise<void> { throw new Error
 // ── Personality ────────────────────────────────────────────
 
 export async function getPersonalityConfig(): Promise<import('@/shared/types').PersonalityConfig> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/personality')
-  if (!res.ok) throw new Error('Failed to load')
-  return res.json()
+	return httpGet<import('@/shared/types').PersonalityConfig>('/personality')
 }
 
 export async function savePersonalityConfig(cfg: import('@/shared/types').PersonalityConfig): Promise<void> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/personality', {
+	const res = await fetch(`${BASE}/personality`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(cfg),
@@ -332,13 +325,11 @@ export async function savePersonalityConfig(cfg: import('@/shared/types').Person
 // ── LLM Config ─────────────────────────────────────────────
 
 export async function getLLMFullConfig(): Promise<import('@/shared/types').LLMFullConfig> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/llm-config')
-  if (!res.ok) throw new Error('Failed to load')
-  return res.json()
+	return httpGet<import('@/shared/types').LLMFullConfig>('/llm-config')
 }
 
 export async function saveLLMFullConfig(cfg: import('@/shared/types').LLMFullConfig): Promise<void> {
-  const res = await fetch('http://127.0.0.1:8080/api/v1/llm-config', {
+	const res = await fetch(`${BASE}/llm-config`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(cfg),

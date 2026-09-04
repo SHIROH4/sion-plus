@@ -23,14 +23,16 @@ type handlers struct {
 // ── Request / Response types ───────────────────────────────────────
 
 type chatRequest struct {
-	Message string `json:"message"`
-	Source  string `json:"source"` // "dashboard" | "pet"
+	Message         string `json:"message"`
+	Source          string `json:"source"` // "dashboard" | "pet"
+	ClientMessageID string `json:"client_message_id"`
 }
 
 type chatResponse struct {
 	Response string `json:"response"`
 	Emotion  string `json:"emotion"`
 	Source   string `json:"source"`
+	Timing   any    `json:"timing,omitempty"`
 }
 
 type emotionResponse struct {
@@ -61,7 +63,7 @@ func (h *handlers) chat(w http.ResponseWriter, r *http.Request) {
 
 	// Publish user message immediately (before blocking on AI)
 	h.broker.Publish("chat-message", map[string]string{
-		"role": "user", "content": req.Message,
+		"role": "user", "content": req.Message, "client_message_id": req.ClientMessageID,
 	})
 
 	result, err := h.runtime.Chat.OnUserMessage(r.Context(), req.Message)
@@ -75,11 +77,12 @@ func (h *handlers) chat(w http.ResponseWriter, r *http.Request) {
 		Response: result.Response,
 		Emotion:  result.Emotion.Primary,
 		Source:   result.EmotionSource,
+		Timing:   result.Timing,
 	})
 
 	// Publish AI response after processing
 	h.broker.Publish("chat-message", map[string]string{
-		"role": "assistant", "content": result.Response,
+		"role": "assistant", "content": result.Response, "client_message_id": req.ClientMessageID,
 	})
 
 	// Push emotion update via SSE
@@ -233,16 +236,17 @@ func (h *handlers) chatStream(w http.ResponseWriter, r *http.Request) {
 		Response: result.Response,
 		Emotion:  result.Emotion.Primary,
 		Source:   result.EmotionSource,
+		Timing:   result.Timing,
 	})
 	fmt.Fprintf(w, "event: done\ndata: %s\n\n", final)
 	flusher.Flush()
 
 	// Publish AI response after processing
 	h.broker.Publish("chat-message", map[string]string{
-		"role": "user", "content": req.Message,
+		"role": "user", "content": req.Message, "client_message_id": req.ClientMessageID,
 	})
 	h.broker.Publish("chat-message", map[string]string{
-		"role": "assistant", "content": result.Response,
+		"role": "assistant", "content": result.Response, "client_message_id": req.ClientMessageID,
 	})
 
 	h.pushEmotion()
@@ -276,15 +280,41 @@ func (h *handlers) proactiveMode(w http.ResponseWriter, r *http.Request) {
 		"normal": 60, "frequent": 30, "focus": 120, "off": 0,
 	}[req.Mode]
 
-	if h.runtime.CognitionTick != nil {
-		if interval > 0 {
-			h.runtime.CognitionTick.SetInterval(time.Duration(interval) * time.Second)
-		}
+	if _, ok := map[string]bool{"normal": true, "frequent": true, "focus": true, "off": true}[req.Mode]; !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported proactive mode"})
+		return
+	}
+	if err := h.runtime.SetProactiveMode(r.Context(), req.Mode, time.Duration(interval)*time.Second); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"mode": req.Mode, "interval_sec": interval,
 	})
+}
+
+// ── POST /api/v1/proactive/feedback ───────────────────────────────
+
+func (h *handlers) proactiveFeedback(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		EventID    string `json:"event_id"`
+		DecisionID string `json:"decision_id"`
+		Kind       string `json:"kind"` // helpful|irrelevant|bad_timing|wrong_tone|snooze|stop
+		Note       string `json:"note"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.DecisionID == "" || req.Kind == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "decision_id and kind are required"})
+		return
+	}
+	if req.EventID == "" {
+		req.EventID = fmt.Sprintf("feedback:%s:%s:%d", req.DecisionID, req.Kind, time.Now().UnixNano())
+	}
+	if err := h.runtime.RecordProactiveFeedback(r.Context(), req.EventID, req.DecisionID, types.FeedbackKind(req.Kind), req.Note); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "decision_id": req.DecisionID, "kind": req.Kind})
 }
 
 // ── GET /api/v1/memory/facts ─────────────────────────────────────
@@ -385,19 +415,10 @@ func (h *handlers) tools(w http.ResponseWriter, r *http.Request) {
 // ── GET /api/v1/proactive/status ─────────────────────────────────
 
 func (h *handlers) proactiveStatus(w http.ResponseWriter, r *http.Request) {
-	interval, lastAction, lastTick := h.runtime.ProactiveStatus()
+	mode, interval, lastAction, lastTick := h.runtime.ProactiveStatus(r.Context())
 	var lastTickUnix int64
 	if !lastTick.IsZero() {
 		lastTickUnix = lastTick.Unix()
-	}
-	mode := "normal"
-	switch interval {
-	case 0:
-		mode = "off"
-	case 30 * time.Second:
-		mode = "frequent"
-	case 120 * time.Second:
-		mode = "focus"
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"mode":         mode,
@@ -441,6 +462,42 @@ func (h *handlers) proactiveActions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"actions": out})
+}
+
+// ── GET /api/v1/proactive/decisions ───────────────────────────────
+
+func (h *handlers) proactiveDecisions(w http.ResponseWriter, r *http.Request) {
+	limit := 30
+	if raw := r.URL.Query().Get("limit"); raw != "" {
+		if _, err := fmt.Sscanf(raw, "%d", &limit); err != nil || limit < 1 || limit > 100 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "limit must be between 1 and 100"})
+			return
+		}
+	}
+	decisions, err := h.runtime.ListProactiveDecisions(r.Context(), limit)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"decisions": decisions})
+}
+
+// proactiveEvaluation returns observational metrics only. A temporally linked
+// reply is reported separately and is never counted as positive feedback.
+func (h *handlers) proactiveEvaluation(w http.ResponseWriter, r *http.Request) {
+	days := 30
+	if raw := r.URL.Query().Get("days"); raw != "" {
+		if _, err := fmt.Sscanf(raw, "%d", &days); err != nil || days < 1 || days > 365 {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "days must be between 1 and 365"})
+			return
+		}
+	}
+	evaluation, err := h.runtime.EvaluateProactivePolicy(r.Context(), time.Now().Add(-time.Duration(days)*24*time.Hour).Unix())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, evaluation)
 }
 
 // ── GET /api/v1/personality ──────────────────────────────────────

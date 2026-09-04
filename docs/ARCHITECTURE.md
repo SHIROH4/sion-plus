@@ -1,5 +1,7 @@
 # Sion v0.3.0 完整架构手册
 
+> **当前状态（2026-09）**：本文档保留了早期 Learner / “DPO-style” 权重更新的设计稿，但该循环不在运行时启动，也不构成真正 DPO。当前实现以显式用户反馈、可持久化控制、可审计决策和保守的上下文偏好调整为准，详见 `docs/contextual-preference-policy.md`。
+
 > **项目类型**: Go 自研桌面 AI 拟人 Agent (Wails + Vue 3 + Naive UI + SQLite + LLM Gateway)
 > **核心架构**: API 原生工具调用 + 量化数理决策引擎 (System 1) + LLM 兜底生成层 (System 2) + 分层记忆 + 自学习权重回流
 > **核心特色**: 行为选择由浮点统计驱动；工具通过 API tools JSON Schema 字段传入(不占上下文)，LLM 自主判断调用时机(tool_choice="auto")；System Prompt 仅 300 字核心人格；52 维特征驱力评分，内置门控抑制、动态调度、轻量化自学习

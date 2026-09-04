@@ -2,6 +2,38 @@ package port
 
 import "context"
 
+// LLMCallMetadata describes how one LLM call should be routed and reported.
+// It travels with the request context so shared executors can keep global
+// rate limiting while still selecting task-specific providers and metrics.
+type LLMCallMetadata struct {
+	Route    string
+	CallType string
+}
+
+type llmCallMetadataKey struct{}
+
+// WithLLMCallMetadata annotates an LLM request with an optional provider route
+// and a stable call type for token/cost attribution.
+func WithLLMCallMetadata(ctx context.Context, route, callType string) context.Context {
+	return context.WithValue(ctx, llmCallMetadataKey{}, LLMCallMetadata{Route: route, CallType: callType})
+}
+
+// LLMRouteFromContext returns the annotated route, or fallback when absent.
+func LLMRouteFromContext(ctx context.Context, fallback string) string {
+	if metadata, ok := ctx.Value(llmCallMetadataKey{}).(LLMCallMetadata); ok && metadata.Route != "" {
+		return metadata.Route
+	}
+	return fallback
+}
+
+// LLMCallTypeFromContext returns the annotated metric label, or fallback when absent.
+func LLMCallTypeFromContext(ctx context.Context, fallback string) string {
+	if metadata, ok := ctx.Value(llmCallMetadataKey{}).(LLMCallMetadata); ok && metadata.CallType != "" {
+		return metadata.CallType
+	}
+	return fallback
+}
+
 // ── LLM Executor ──
 
 // LLMExecutor is the unified LLM calling interface.
@@ -90,24 +122,24 @@ type LLMProviderRegistry interface {
 }
 
 type LLMProviderConfig struct {
-	Name       string `yaml:"name"`
-	BaseURL    string `yaml:"base_url"`
-	APIKey     string `yaml:"api_key"`
-	ChatModel  string `yaml:"chat_model"`
-	EmbedModel string `yaml:"embed_model,omitempty"`
-	Enabled    bool   `yaml:"enabled"`
-	Priority   int    `yaml:"priority"`
-	MaxRetries int    `yaml:"max_retries"`
-	TimeoutSec int    `yaml:"timeout_sec"`
+	Name       string `yaml:"name" json:"name"`
+	BaseURL    string `yaml:"base_url" json:"base_url"`
+	APIKey     string `yaml:"api_key" json:"api_key"`
+	ChatModel  string `yaml:"chat_model" json:"chat_model"`
+	EmbedModel string `yaml:"embed_model,omitempty" json:"embed_model,omitempty"`
+	Enabled    bool   `yaml:"enabled" json:"enabled"`
+	Priority   int    `yaml:"priority" json:"priority"`
+	MaxRetries int    `yaml:"max_retries" json:"max_retries"`
+	TimeoutSec int    `yaml:"timeout_sec" json:"timeout_sec"`
 }
 
 type LLMRoutes struct {
-	Default string `yaml:"default"`
-	Chat    string `yaml:"chat"`
-	Emotion string `yaml:"emotion"`
-	Memory  string `yaml:"memory"`
-	Vision  string `yaml:"vision"`
-	Summary string `yaml:"summary"`
-	Signal  string `yaml:"signal"`
-	Search  string `yaml:"search"`
+	Default string `yaml:"default" json:"default"`
+	Chat    string `yaml:"chat" json:"chat"`
+	Emotion string `yaml:"emotion" json:"emotion"`
+	Memory  string `yaml:"memory" json:"memory"`
+	Vision  string `yaml:"vision" json:"vision"`
+	Summary string `yaml:"summary" json:"summary"`
+	Signal  string `yaml:"signal" json:"signal"`
+	Search  string `yaml:"search" json:"search"`
 }

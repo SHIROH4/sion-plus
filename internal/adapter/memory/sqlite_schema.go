@@ -119,6 +119,38 @@ func (s *SQLiteStore) migrate() error {
 			created_at INTEGER NOT NULL
 		)`,
 
+		// Persistent cursor prevents MemoryWorker from replaying the same
+		// history window after every wake or process restart.
+		`CREATE TABLE IF NOT EXISTS memory_worker_state (
+			key        TEXT PRIMARY KEY,
+			value_int  INTEGER NOT NULL DEFAULT 0,
+			updated_at INTEGER NOT NULL
+		)`,
+
+		// Auditable provenance for facts extracted from chat messages.
+		`CREATE TABLE IF NOT EXISTS fact_sources (
+			fact_id    INTEGER NOT NULL,
+			message_id INTEGER NOT NULL,
+			created_at INTEGER NOT NULL,
+			PRIMARY KEY (fact_id, message_id),
+			FOREIGN KEY(fact_id) REFERENCES facts(id),
+			FOREIGN KEY(message_id) REFERENCES messages(id)
+		)`,
+
+		// Every automatic fact merge is retained for inspection and rollback
+		// analysis. Incoming content is never silently discarded.
+		`CREATE TABLE IF NOT EXISTS fact_merge_audit (
+			id                     INTEGER PRIMARY KEY AUTOINCREMENT,
+			target_fact_id         INTEGER NOT NULL,
+			incoming_entity        TEXT NOT NULL,
+			incoming_relation_type TEXT NOT NULL,
+			incoming_content       TEXT NOT NULL,
+			reason                 TEXT NOT NULL,
+			similarity             REAL NOT NULL,
+			created_at             INTEGER NOT NULL,
+			FOREIGN KEY(target_fact_id) REFERENCES facts(id)
+		)`,
+
 		// ── episodes (topic-grouped conversations) ──
 		`CREATE TABLE IF NOT EXISTS episodes (
 			id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -181,6 +213,67 @@ func (s *SQLiteStore) migrate() error {
 			at       INTEGER NOT NULL
 		)`,
 
+		// ── proactive policy audit trail ───────────────────────────────
+		`CREATE TABLE IF NOT EXISTS proactive_decisions (
+			decision_id     TEXT PRIMARY KEY,
+			policy_version  TEXT NOT NULL,
+			action          TEXT NOT NULL,
+			source          TEXT NOT NULL,
+			score           REAL NOT NULL,
+			context_json    TEXT NOT NULL,
+			candidates_json TEXT NOT NULL,
+			content         TEXT NOT NULL DEFAULT '',
+			state           TEXT NOT NULL DEFAULT 'delivered',
+			created_at      INTEGER NOT NULL,
+			delivered_at    INTEGER NOT NULL,
+			resolved_at     INTEGER NOT NULL DEFAULT 0
+		)`,
+		`CREATE TABLE IF NOT EXISTS proactive_feedback (
+			id          INTEGER PRIMARY KEY AUTOINCREMENT,
+			decision_id TEXT NOT NULL,
+			kind        TEXT NOT NULL,
+			reward      REAL NOT NULL,
+			source      TEXT NOT NULL,
+			confidence  REAL NOT NULL,
+			note        TEXT NOT NULL DEFAULT '',
+			created_at  INTEGER NOT NULL,
+			FOREIGN KEY(decision_id) REFERENCES proactive_decisions(decision_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS proactive_feedback_requests (
+			event_id    TEXT PRIMARY KEY,
+			decision_id TEXT NOT NULL,
+			created_at  INTEGER NOT NULL,
+			FOREIGN KEY(decision_id) REFERENCES proactive_decisions(decision_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS proactive_feedback_current (
+			decision_id TEXT PRIMARY KEY,
+			event_id    TEXT NOT NULL,
+			kind        TEXT NOT NULL,
+			reward      REAL NOT NULL,
+			source      TEXT NOT NULL,
+			confidence  REAL NOT NULL,
+			note        TEXT NOT NULL DEFAULT '',
+			created_at  INTEGER NOT NULL,
+			FOREIGN KEY(decision_id) REFERENCES proactive_decisions(decision_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS proactive_replies (
+			decision_id TEXT PRIMARY KEY,
+			content TEXT NOT NULL DEFAULT '',
+			attribution TEXT NOT NULL,
+			confidence REAL NOT NULL,
+			created_at INTEGER NOT NULL,
+			FOREIGN KEY(decision_id) REFERENCES proactive_decisions(decision_id)
+		)`,
+		`CREATE TABLE IF NOT EXISTS proactive_controls (
+			scope       TEXT NOT NULL,
+			scope_value TEXT NOT NULL DEFAULT '',
+			mode        TEXT NOT NULL,
+			until_at    INTEGER NOT NULL DEFAULT 0,
+			source      TEXT NOT NULL,
+			updated_at  INTEGER NOT NULL,
+			PRIMARY KEY(scope, scope_value)
+		)`,
+
 		// ── events (append-only audit log, v2.1) ──
 		`CREATE TABLE IF NOT EXISTS events (
 			id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -221,8 +314,14 @@ func (s *SQLiteStore) migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_diaries_created ON diaries(created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_diaries_archived ON diaries(archived)`,
 		`CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_fact_sources_message ON fact_sources(message_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_fact_merge_target ON fact_merge_audit(target_fact_id, created_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_threads_status ON conversation_threads(status)`,
 		`CREATE INDEX IF NOT EXISTS idx_outcomes_source ON outcomes(action_source)`,
+		`CREATE INDEX IF NOT EXISTS idx_proactive_decisions_state ON proactive_decisions(state, delivered_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_proactive_feedback_decision ON proactive_feedback(decision_id, created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_proactive_replies_created ON proactive_replies(created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_proactive_controls_until ON proactive_controls(until_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_outcomes_created ON outcomes(created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_events_type ON events(type)`,
 		`CREATE INDEX IF NOT EXISTS idx_events_created ON events(created_at)`,

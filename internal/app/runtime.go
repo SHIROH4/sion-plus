@@ -36,6 +36,7 @@ type AppRuntime struct {
 	ToolRegistry  *tool.ToolRegistry
 	personality   string
 	dataDir       string
+	configManager port.ConfigManager
 	startTime     time.Time
 
 	promptBldr      *modules.PromptBuilder
@@ -47,13 +48,17 @@ type AppRuntime struct {
 }
 
 type Config struct {
-	DataDir      string
-	Personality  string
-	LLMProviders []port.LLMProviderConfig
-	LLMRoutes    port.LLMRoutes
-	VisionURL    string
-	VisionKey    string
-	VisionModel  string
+	DataDir            string
+	Personality        string
+	LLMProviders       []port.LLMProviderConfig
+	LLMRoutes          port.LLMRoutes
+	ConfigManager      port.ConfigManager
+	VisionURL          string
+	VisionKey          string
+	VisionModel        string
+	EmbeddingURL       string
+	EmbeddingModel     string
+	EmbeddingDimension int
 }
 
 func NewRuntime(cfg Config) (*AppRuntime, error) {
@@ -61,7 +66,7 @@ func NewRuntime(cfg Config) (*AppRuntime, error) {
 		home, _ := os.UserHomeDir()
 		cfg.DataDir = filepath.Join(home, ".sion")
 	}
-	r := &AppRuntime{dataDir: cfg.DataDir, personality: cfg.Personality, startTime: time.Now()}
+	r := &AppRuntime{dataDir: cfg.DataDir, personality: cfg.Personality, configManager: cfg.ConfigManager, startTime: time.Now()}
 
 	r.services.llm = modules.NewLLMService(cfg.LLMProviders, cfg.LLMRoutes, cfg.DataDir)
 
@@ -80,6 +85,12 @@ func NewRuntime(cfg Config) (*AppRuntime, error) {
 
 	workerCfg := memory.DefaultWorkerConfig()
 	worker := memory.NewMemoryWorker(store, evidence, recall, buffer, comp, workerCfg)
+	if cfg.EmbeddingURL != "" && cfg.EmbeddingModel != "" {
+		embedding := llm.NewOllamaEmbedding(cfg.EmbeddingURL, cfg.EmbeddingModel, cfg.EmbeddingDimension, nil)
+		recall.SetEmbeddingService(embedding)
+		worker.SetEmbeddingService(embedding, cfg.EmbeddingModel)
+		log.Printf("[Runtime] local embedding configured: %s @ %s", cfg.EmbeddingModel, cfg.EmbeddingURL)
+	}
 
 	r.services.memory = modules.NewMemoryService(store, buffer, recall, evidence, worker, comp, eventLog)
 
@@ -139,7 +150,9 @@ func (r *AppRuntime) Init(ctx context.Context) error {
 	r.services.emotion.SetExecutor(r.services.llm.Executor)
 	r.services.learning.SetExecutor(r.services.llm.Executor)
 
-	memory.NewLLMHooksWithRegistry(r.services.llm.Registry, r.workerRef, r.compRef).Install()
+	// Memory tasks use the shared executor so they participate in global rate
+	// limiting and token tracking; per-call metadata still selects their route.
+	memory.NewLLMHooks(r.services.llm.Executor, r.workerRef, r.compRef).Install()
 	r.Chat = modules.NewChatOrchestrator(
 		r.services.emotion.Evaluator, r.services.emotion.Store,
 		r.recallRef, r.workerRef, r.bufferRef,
@@ -158,6 +171,7 @@ func (r *AppRuntime) Init(ctx context.Context) error {
 		)
 		r.CognitionTick.SetFirstTickDelay(30 * time.Second)
 		r.CognitionTick.SetToolRegistry(r.ToolRegistry)
+		r.CognitionTick.SetHistoryStore(r.services.memory.Store)
 		r.Chat.SetPostChatHook(r.CognitionTick.AnalyzePostChat)
 		r.Chat.SetPreChatHook(r.CognitionTick.OnUserMessage)
 		log.Println("[Runtime] proactive cognition wired")
@@ -244,7 +258,22 @@ func (r *AppRuntime) LLMConfig() ([]port.LLMProviderConfig, port.LLMRoutes) {
 }
 
 func (r *AppRuntime) ReloadLLMConfig(providers []port.LLMProviderConfig, routes port.LLMRoutes) error {
-	return r.services.llm.ReloadConfig(providers, routes)
+	if err := r.services.llm.ReloadConfig(providers, routes); err != nil {
+		return err
+	}
+	if r.configManager == nil {
+		return nil
+	}
+	cfg, err := r.configManager.Load()
+	if err != nil {
+		return fmt.Errorf("load config before persisting LLM settings: %w", err)
+	}
+	cfg.Providers = providers
+	cfg.Routes = routes
+	if err := r.configManager.Save(cfg); err != nil {
+		return fmt.Errorf("persist LLM settings: %w", err)
+	}
+	return nil
 }
 
 func (r *AppRuntime) SavePersonalityConfig(cfg *PersonalityConfig) error {
@@ -288,11 +317,11 @@ func (r *AppRuntime) ListActiveThreads(ctx context.Context) ([]types.Conversatio
 	return r.services.memory.Store.ListActiveThreads(ctx)
 }
 
-func (r *AppRuntime) ProactiveStatus() (time.Duration, string, time.Time) {
+func (r *AppRuntime) ProactiveStatus(ctx context.Context) (string, time.Duration, string, time.Time) {
 	if r.CognitionTick == nil {
-		return 0, "", time.Time{}
+		return "off", 0, "", time.Time{}
 	}
-	return r.CognitionTick.Interval(), r.CognitionTick.LastAction(), r.CognitionTick.LastTickAt()
+	return r.CognitionTick.Mode(ctx), r.CognitionTick.Interval(), r.CognitionTick.LastAction(), r.CognitionTick.LastTickAt()
 }
 
 func (r *AppRuntime) ProactiveActions() []types.ActionDef {
@@ -300,6 +329,44 @@ func (r *AppRuntime) ProactiveActions() []types.ActionDef {
 		return nil
 	}
 	return r.CognitionTick.Actions()
+}
+
+// RecordProactiveFeedback records an explicit user preference for a delivered
+// proactive decision. Normal chat is intentionally not used as a reward label.
+func (r *AppRuntime) RecordProactiveFeedback(ctx context.Context, eventID, decisionID string, kind types.FeedbackKind, note string) error {
+	if r.CognitionTick == nil {
+		return fmt.Errorf("proactive system is not available")
+	}
+	return r.CognitionTick.RecordExplicitFeedback(ctx, eventID, decisionID, kind, note)
+}
+
+func (r *AppRuntime) SetProactiveMode(ctx context.Context, mode string, interval time.Duration) error {
+	if r.CognitionTick == nil {
+		return fmt.Errorf("proactive system is not available")
+	}
+	if err := r.CognitionTick.SetUserMode(ctx, mode); err != nil {
+		return err
+	}
+	if interval > 0 {
+		r.CognitionTick.SetInterval(interval)
+	}
+	return nil
+}
+
+func (r *AppRuntime) ListProactiveDecisions(ctx context.Context, limit int) ([]types.ProactiveDecision, error) {
+	store, ok := r.services.memory.Store.(port.ProactiveFeedbackStore)
+	if !ok {
+		return nil, fmt.Errorf("proactive feedback store is not configured")
+	}
+	return store.ListProactiveDecisions(ctx, limit)
+}
+
+func (r *AppRuntime) EvaluateProactivePolicy(ctx context.Context, since int64) (*types.ProactivePolicyEvaluation, error) {
+	store, ok := r.services.memory.Store.(port.ProactiveFeedbackStore)
+	if !ok {
+		return nil, fmt.Errorf("proactive feedback store is not configured")
+	}
+	return store.EvaluateProactivePolicy(ctx, since)
 }
 
 func (r *AppRuntime) ListTools() []*tool.ToolDef {

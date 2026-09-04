@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, readonly } from 'vue'
-import type { ProactiveStatus, ProactiveAction } from '@/shared/types'
-import { getProactiveStatus, getProactiveActions, setProactiveMode as setMode } from '@/shared/api'
+import type { ProactiveStatus, ProactiveAction, ProactiveDecision, ProactivePolicyEvaluation } from '@/shared/types'
+import { getProactiveStatus, getProactiveActions, getProactiveDecisions, getProactiveEvaluation, setProactiveMode as setMode } from '@/shared/api'
 
 export const useProactiveStore = defineStore('proactive', () => {
   const status = ref<ProactiveStatus>({ mode: 'normal', interval_sec: 60, last_action: '', last_tick: 0 })
   const actions = ref<ProactiveAction[]>([])
+  const decisions = ref<ProactiveDecision[]>([])
+  const evaluation = ref<ProactivePolicyEvaluation | null>(null)
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -13,10 +15,10 @@ export const useProactiveStore = defineStore('proactive', () => {
     normal: '普通', frequent: '频繁', focus: '专注', off: '关闭',
   }
 
-  const modeDesc: Record<string, string> = {
-    normal: '每 60 秒决策一次',
-    frequent: '每 30 秒决策一次',
-    focus: '每 120 秒决策一次',
+	const modeDesc: Record<string, string> = {
+		normal: '标准决策节奏',
+		frequent: '缩短决策间隔',
+		focus: '延长间隔，减少打扰',
     off: '暂停主动搭话',
   }
 
@@ -44,11 +46,19 @@ export const useProactiveStore = defineStore('proactive', () => {
     } catch { /* */ }
   }
 
+  async function fetchDecisions() {
+    try { decisions.value = await getProactiveDecisions() } catch { /* */ }
+  }
+
+  async function fetchEvaluation() {
+    try { evaluation.value = await getProactiveEvaluation() } catch { /* */ }
+  }
+
   async function fetch() {
     loading.value = true
     error.value = null
     try {
-      await Promise.all([fetchStatus(), fetchActions()])
+      await Promise.all([fetchStatus(), fetchActions(), fetchDecisions(), fetchEvaluation()])
     } catch (e) {
       error.value = e instanceof Error ? e.message : '加载失败'
     } finally {
@@ -64,11 +74,11 @@ export const useProactiveStore = defineStore('proactive', () => {
   }
 
   return {
-    status: readonly(status),
+    status: readonly(status), decisions: readonly(decisions), evaluation: readonly(evaluation),
     actions: readonly(actions),
     loading: readonly(loading),
     error: readonly(error),
     modeLabels, modeDesc, categoryLabels, categoryIcons, outcomeLabels,
-    fetch, fetchStatus, switchMode,
+    fetch, fetchStatus, fetchDecisions, switchMode,
   }
 })

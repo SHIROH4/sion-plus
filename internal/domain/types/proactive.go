@@ -8,6 +8,7 @@ import "time"
 // Sources can be internal (cognition tick) or external (plugin events).
 type ProactiveIntent struct {
 	ID          string        `json:"id"`
+	DecisionID  string        `json:"decision_id,omitempty"`
 	Source      string        `json:"source"`       // "cognition"|"plugin:qq"|"plugin:timer"...
 	Action      string        `json:"action"`       // action name from ActionDef
 	Message     string        `json:"message"`      // instruction/prompt for LLM
